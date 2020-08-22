@@ -5,11 +5,11 @@ seed!(123)
 
 uptos = [1, 100, 500]
 
-x = rand(2, 200000)
+x = rand(2, 300000)
 
 dofs = mat2points(x)
 
-@time P_r, ℓ_r = r_maximin(dofs; n_bins=100)
+# @time P_r, ℓ_r = r_maximin(dofs; n_bins=100)
 @time P, ℓ = maximin(dofs)
 
 # pl = scatter(aspect_ratio=:equal, size=(500,500))

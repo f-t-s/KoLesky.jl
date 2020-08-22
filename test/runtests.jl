@@ -20,8 +20,8 @@ n_bins = 2 * round(Int, log(r, diam / mindist))
 
 @testset "KoLesky.jl" begin
     # Write your tests here.
-    @test r_maximin(dofs, r=r, n_bins=n_bins)[1] == KoLesky.naive_maximin(dofs)[1]
-    @test r_maximin(dofs, r=r, n_bins=n_bins)[2] ≈ KoLesky.naive_maximin(dofs)[2]
+#     @test r_maximin(dofs, r=r, n_bins=n_bins)[1] == KoLesky.naive_maximin(dofs)[1]
+#     @test r_maximin(dofs, r=r, n_bins=n_bins)[2] ≈ KoLesky.naive_maximin(dofs)[2]
 
     @test maximin(dofs,)[1] == KoLesky.naive_maximin(dofs)[1]
     @test maximin(dofs,)[2] ≈ KoLesky.naive_maximin(dofs)[2]
