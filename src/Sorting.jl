@@ -146,6 +146,5 @@ function maximin(dofs; ℓ0=fill(Inf, length(dofs)))
         new_pivot!(ℓ, h, f, buffer, pivot, dofs)
     end
     # First set the length-scale of the remaining dofs to the minimal resolution
-
     return f.P, ℓ
 end
