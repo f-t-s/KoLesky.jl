@@ -5,7 +5,7 @@ seed!(123)
 
 uptos = [1, 100, 500]
 
-x = rand(2, 300000)
+x = rand(2, 5)
 
 dofs = mat2points(x)
 
@@ -20,3 +20,10 @@ dofs = mat2points(x)
 # 
 # display(pl)
 # 
+
+ρ = 6.0
+λ = 1.5
+
+@time 𝒩 = partition_into_supernodes(dofs, ℓ, P, ρ, λ)
+
+

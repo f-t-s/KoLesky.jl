@@ -19,8 +19,12 @@ import KoLesky.distance
 
 @testset "KoLesky.jl" begin
     @testset "Maximin" begin
-    dofs = mat2points(rand(3, 10))
-    @test maximin(dofs,)[1] == KoLesky.naive_maximin(dofs)[1]
-    @test maximin(dofs,)[2] ≈ KoLesky.naive_maximin(dofs)[2]
+        dofs = mat2points(rand(3, 10))
+        @test maximin(dofs,)[1] == KoLesky.naive_maximin(dofs)[1]
+        @test maximin(dofs,)[2] ≈ KoLesky.naive_maximin(dofs)[2]
+    end
+    @testset "SuperNodes" begin
+        P, ℓ = KoLesky.naive_maximin(dofs); λ = 1.5; ρ = 3.0
+        @test KoLesky.is_complete(KoLesky.partition_into_supernodes(dofs, ℓ, P, λ, ρ))
     end
 end
