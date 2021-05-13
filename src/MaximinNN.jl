@@ -166,7 +166,7 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
     tree = Tree(x[:,1:1])
     for k = 1 : N
         iter_parent = findnext(l -> ℓ_temp[l] < α * ρ * ℓ[k], 1 : N, iter_parent) - 1
-        if  length(tree.data) < iter_parent * λ
+        if  length(tree.data) < iter_parent / λ
             tree = Tree(x[:, 1 : min(end, round(Int, iter_parent * 1.5))])
         end
         # Computes, among all nodes before iter_parent or iter_child according to the ordering given by P_temp, the points closest to the given point x[:, k]
@@ -198,5 +198,5 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
         unique!(children_list)
         push!(supernodes, IndexSuperNode(parent_list, children_list)) 
     end
-    return supernodes
+    return supernodes, supernodal_parents_list
 end
