@@ -1,3 +1,5 @@
+import LinearAlgebra.sortperm
+
 #############################################################################
 #Implementation of a mutable maximal Heap
 #############################################################################
@@ -16,9 +18,14 @@ struct RankedNode{Tval, Tid, Trank} <: AbstractNode{Tval, Tid}
   rank::Trank
 end
 
-function valtype(node::AbstractNode)
+function vtype(node::AbstractNode)
   return typeof(node.val)
 end
+
+function vtype(type::Type{<:AbstractNode{Tval,Tid}}) where {Tval,Tid}
+  return Tval
+end
+
 
 function getval(node::AbstractNode)
   return node.val
@@ -33,40 +40,50 @@ function idtype(node::AbstractNode)
   return typeof(node.id)
 end
 
+function idtype(type::Type{<:AbstractNode{Tval,Tid}}) where {Tval,Tid}
+  return Tid
+end
+
 function getid(node::AbstractNode)
   return node.id
 end
 
 function ranktype(node::RankedNode)
   return typeof(node.rank)
-return
+end
 
 function getrank(node::RankedNode)
   return node.rank
 end
 
 #Mutable Heap (maximal value first)
-struct MutHeap{TNode<:AbstractNode{Tval, Tid}}
+struct MutableHeap{Tn<:AbstractNode,Tid}
   # Vector containing the nodes of the heap
-  nodes::Vector{TNode}
+  nodes::Vector{Tn}
   # Vector providing a lookup for the nodes
   lookup::Vector{Tid}
   # We make sure none of the input nodes has the typmin of Tval, since this this value is reserved to implement popping from the heap
-  function MutHeap{TNode<:AbstractNode{Tval, Tid}}(nodes, lookup) !all(getval.(nodes) > typemin(Tval)) ? error("typemin of value type reserved") : new(nodes, lookup)
+  function MutableHeap{Tn, Tid}(nodes::Vector{Tn}, lookup::Vector{Tid}) where {Tn<:AbstractNode,Tid} 
+    !all(getval.(nodes) .> typemin(vtype(Tn))) ? error("typemin of value type reserved") : new{Tn,Tid}(nodes, lookup) 
+  end
 end
 
-function MutHeap(values::AbstractVector)
+function MutableHeap(values::AbstractVector)
   Tval = eltype(values)
   Tid = Int
-  nodes = Vector{Node{Tval, Tid}}(undef, length(values))
+  nodes = Vector{Node{Tval,Tid}}(undef, length(values))
   lookup = Vector{Int}(undef, length(values))
-  perm = sortperm(nodes,reverse=true)
+  for (id, val) in enumerate(values)
+    nodes[id] = Node{Tval,Tid}(val, id)
+    lookup[id] = id
+  end
+  perm = sortperm(nodes,rev=true)
   nodes .= nodes[perm]
   lookup .= lookup[perm]
-  return MutHeap{eltype(nodes)}(nodes, lookup)
+  return MutableHeap{eltype(nodes), eltype(lookup)}(nodes, lookup)
 end
 
-function nodetype(h::MutHeap{TNode}) where TNode
+function nodetype(h::MutableHeap{TNode}) where TNode
   return TNode
 end
 
@@ -84,12 +101,17 @@ end
 
 #Node comparisons
 import Base.isless
-function isless( a::Node, b::Node)
+function isless( a::RankedNode, b::RankedNode)
   isless((-a.rank, a.val), (-b.rank, b.val))
 end
 
+function isless( a::Node, b::Node)
+  isless(a.val, b.val)
+end
+
+
 import Base.>=
-function >=(a::AbstractNode, b::AbstractNode)
+function >=(a::Node, b::Node)
   a.val >= b.val
 end
 
@@ -118,7 +140,7 @@ end
 #Function that looks at element h.nodes[hInd] and moves it down the tree 
 #if it is sufficiently small. Returns the new index if a move took place, 
 #and lastindex(h.nodes), else
-function _moveDown!(h::MutHeap, hInd)
+function _moveDown!(h::MutableHeap, hInd)
   pivot = h.nodes[hInd]
   #If both children exist:
   if 2 * hInd + 1 <= lastindex( h.nodes )
@@ -155,23 +177,20 @@ function _moveDown!(h::MutHeap, hInd)
 end
 
 #Get the leading node
-function top_node(h::MutHeap)
+function top_node(h::MutableHeap)
   return first(h.nodes)
 end
 
 #Gets the leading node and moves it to the back
-function top_node!(h::MutHeap{RankedNode{Tval,Tid,Trank}}) where {Tval, Tid, Trank}
+function top_node!(h::MutableHeap{Node{Tv,Ti},Ti}) where {Tv, Ti}
   out = first(h.nodes)
   # move the node to the very bottom of the list
-  update!(h, getid(out), typemin(Tval))
+  update!(h, getid(out), typemin(Tv))
   return out 
 end
 
 #Updates (decreases) an element of the heap and restores the heap property
-function update!(h::MutHeap{Tv,Ti,Trank}, id::Ti, val::Tv) where {Tv,Ti,Trank}
-  if val <= typemin(Tv)
-    error("Typemin of heap data type is reserved")
-  end
+function update!(h::MutableHeap{Node{Tv,Ti},Ti}, id::Ti, val::Tv) where {Tv,Ti}
   tempInd::Ti = h.lookup[id]
   if h.nodes[tempInd].val > val
     h.nodes[tempInd] = setval(h.nodes[tempInd], val)

@@ -14,7 +14,7 @@ struct ImplicitKLFactorizationRBF{Tv,Ti,Tm}<:AbstractImplicitKLFactorization{Tv}
     # Ordering
     P::Vector{Ti}
     # Skeletons that describe the sparsity pattern
-    supernodes::IndexSupernodalAssignment{Ti,Tm}
+    supernodes::IndirectSupernodalAssignment{Ti,Tm}
     # A covariance function
     𝒢!
 end

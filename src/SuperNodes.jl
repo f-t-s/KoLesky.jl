@@ -21,6 +21,8 @@ function istril(node::IndexSuperNode)
     return minimum(node.row_indices) >= maximum(node.column_indices)
 end
 
+# importing issorted to overload it. Okay, since only involving custom types
+import Base.issorted
 function issorted(node::IndexSuperNode)
     return issorted(node.row_indices) && issorted(node.column_indices)
 end
