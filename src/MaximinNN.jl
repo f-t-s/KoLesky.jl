@@ -120,6 +120,15 @@ function _split_into_supernodes(parent_list, ℓ, λ)
     return out
 end
 
+function _gather_assignments(assignments, first_parent) 
+    perm = sortperm(assignments) 
+
+    first_indices = unique(i -> assignments[perm[i]], 1 : length(perm))
+    push!(first_indices, length(assignments) + 1) 
+    ranges = [(first_indices[k] : (first_indices[k + 1] - 1)) for k = 1 : (length(first_indices) - 1)]
+    return [perm[range] .+ (first_parent- 1) for range in ranges] 
+end
+
 # taking as input the maximin ordering and the associated distances, computes the associated reverse maximin sparsity pattern
 # α determines what part of the sparsity pattern arises from the clustering as opposed to the the sparsity pattern of individual points. 
 # TODO: Still bugged
@@ -136,8 +145,7 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
 
     # constructing a maximin ordering that are used as centers of the maximin ordering. 
     if reconstruct_ordering == true 
-        # TODO: replace with explicit 1-nn variant
-        P_temp, ℓ_temp = maximin_ordering(x, 1; init_distances=fill(Inf, (1, size(x, 2))), Tree)
+        P_temp, ℓ_temp = maximin_ordering(x; Tree)
         rev_P_temp = Vector{Int}(undef, N)
         rev_P_temp[P_temp] = 1 : N
     else
@@ -147,56 +155,51 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
         rev_P_temp[P_temp] = 1 : N
     end
 
-    tree = Tree(x)
-    # nearest_distances= copy(init_distances)
-    # @assert size(nearest_distances) == (k_neighbors, N)
-    # iter_parent and child are used to find cutoff for when searching for the parent and child supernodes that a given 
-    # point is part of
-    iter_parent = 1
-
-    # Initializing the lists of points that are associated to the different supernodes
-    parent_lists = Vector{Vector{Int}}(undef, N)
-    for k = 1 : N
-        parent_lists[k] = Int[]
-    end
-
-    # We assign each point to the admissible (sufficiently large length scale compared to the sparsity pattern)
-    # TODO check the choice of iter_parent regarding +- 1
-    # In order to preserve the efficiency of the nearest neigbors, we repeatedly build th 
-    tree = Tree(x[:,1:1])
-    for k = 1 : N
-        iter_parent = findnext(l -> ℓ_temp[l] < α * ρ * ℓ[k], 1 : N, iter_parent) - 1
-        if  length(tree.data) < iter_parent / λ
-            tree = Tree(x[:, 1 : min(end, round(Int, iter_parent * 1.5))])
-        end
-        # Computes, among all nodes before iter_parent or iter_child according to the ordering given by P_temp, the points closest to the given point x[:, k]
-        # selects the list of indices (which here contains only one element) and then first element of this list
-        parent_home = nn(tree, x[:, k], l -> rev_P_temp[l] > iter_parent)[1]
-        push!(parent_lists[parent_home], k) 
-    end
-    # sorting each of the parent lists
-    sort!.(parent_lists)
-
-    # We now construct the parent sets while making sure that the ratio of length scales of parent nodes
-    # within a given supernode is upper bounded by λ
-    supernodal_parents_list = Vector{Int}[]
-    for parent_list in parent_lists
-        append!(supernodal_parents_list, _split_into_supernodes(parent_list, ℓ, λ))
-    end
-
-    # For now, we assemble the sparsity pattern by looking at patterns of the individual nodes
     supernodes = IndexSuperNode{Int}[]
-    tree = Tree(x) 
-    for parent_list in supernodal_parents_list
-        children_list = Int[]
-        for parent_id in parent_list
-            new_children = inrange(tree, x[:, parent_id], ρ * ℓ[parent_id])
-            new_children = new_children[findall(new_children .<= parent_id)]
-            append!(children_list, new_children)
+    children_tree = Tree(x) 
+    min_ℓ = ℓ[findfirst(!isinf, ℓ)]
+    last_aggregation_point = 1
+    last_parent = 0
+    # last_parent = findnext(l -> ℓ[l] < min_ℓ / λ, last_parent) - 1 
+    while last_parent < N
+        # finding the last aggregation index, for which the aggregaton points are sufficiently spread out away from each other
+        last_aggregation_point = findnext(l -> (l == N + 1) || (ℓ_temp[l] < α * ρ * min_ℓ), 1 : (N + 1), last_aggregation_point) - 1
+        # Constructing the aggregation tree containing only the admissible aggregation points
+        aggregation_tree = Tree(x[:, P_temp[1 : last_aggregation_point]])
+
+        # The first parent that we are treating in the present iteration of the while loop is first_parent
+        first_parent = last_parent + 1
+        # finding the last index l for which ℓ[l] is still within the admissible scale range
+        last_parent = findnext(l -> (l == N + 1) || ℓ[l] < min_ℓ, 1 : (N + 1), last_parent) - 1 
+
+        # Computing the assignments to supernodes
+        assignments = nn(aggregation_tree, x[:, first_parent : last_parent])[1]
+        if length(assignments) > 0
+            @show maximum([norm(x[:, P_temp[assignments[k]]] - x[:, k + first_parent - 1]) for k in 1 : length(assignments)])
         end
-        sort!(children_list)
-        unique!(children_list)
-        push!(supernodes, IndexSuperNode(parent_list, children_list)) 
+        column_indices_list = _gather_assignments(assignments, first_parent)
+
+
+        for column_indices in column_indices_list
+            row_indices = Int[]
+            for column_index in column_indices
+                # possibly use second parameter here or make dependent on α
+                new_row_indices = inrange(children_tree, x[:, column_index], ρ * ℓ[column_index])
+                new_row_indices = new_row_indices[findall(new_row_indices .<= column_index)]
+                append!(row_indices, new_row_indices)
+            end
+            sort!(row_indices)
+            unique!(row_indices)
+            push!(supernodes, IndexSuperNode(column_indices, row_indices))
+        end
+
+        @show min_ℓ
+        @show last_aggregation_point
+        @show first_parent
+        @show last_parent
+
+        # updating the length scale 
+        min_ℓ = min_ℓ / λ
     end
-    return supernodes, supernodal_parents_list
+    return supernodes
 end
