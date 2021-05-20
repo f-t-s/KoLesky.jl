@@ -23,7 +23,7 @@ supernodes = KoLesky.supernodal_reverse_maximin_sparsity_pattern(x, P, ℓ, 3.0)
 
 # Plototing the supernodes
 outplot = scatter(xlims=(-0.1,1.1), ylims=(-0.1,1.1))
-for k in [3200]
+for k in [1800]
     node = supernodes[k]
     scatter!(outplot, x[1, node.column_indices], x[2, node.column_indices], markersize=10)
     scatter!(outplot, x[1, node.row_indices], x[2, node.row_indices])
