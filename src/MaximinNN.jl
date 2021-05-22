@@ -170,15 +170,11 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
         # The first parent that we are treating in the present iteration of the while loop is first_parent
         first_parent = last_parent + 1
         # finding the last index l for which ℓ[l] is still within the admissible scale range
-        last_parent = findnext(l -> (l == N + 1) || ℓ[l] < min_ℓ, 1 : (N + 1), first_parent) - 1 
+        last_parent = findnext(l -> (l + 1 == N + 1) || ℓ[l + 1] < min_ℓ, 1 : N, first_parent)
 
         # Computing the assignments to supernodes
         assignments = nn(aggregation_tree, x[:, first_parent : last_parent])[1]
-        if length(assignments) > 0
-            @show maximum([norm(x[:, P_temp[assignments[k]]] - x[:, k + first_parent - 1]) for k in 1 : length(assignments)])
-        end
         column_indices_list = _gather_assignments(assignments, first_parent)
-        @show maximum([maximum([norm(x[:, i] - x[:, j]) for i in list for j in list ]) for list in column_indices_list])
 
         for column_indices in column_indices_list
             row_indices = Int[]
@@ -192,11 +188,6 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
             unique!(row_indices)
             push!(supernodes, IndexSuperNode(column_indices, row_indices))
         end
-
-        @show min_ℓ
-        @show last_aggregation_point
-        @show first_parent
-        @show last_parent
 
         # updating the length scale 
         min_ℓ = min_ℓ / λ
