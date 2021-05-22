@@ -1,34 +1,32 @@
 import LinearAlgebra.norm
 
+abstract type AbstractCovarianceFunction end 
+
+# automatically implements a mutating batched version of a given covariance function 
+function (cov<:AbstractCovarianceFunction)(out::AbstractMatrix, x_vec::AbstractVector{<:AbstractMeasurement}, y_vec{<:AbstractMeasurement})
+    for cartesian in CartesianIndices(out) 
+        out[cartesian] = cov(x_vec[cartesian[1]], y_vec[cartesian[2]])
+    end
+end
+
+# The exponential covariance function
+struct ExponentialCovariance{Tv}
+    length_scale::Tv
+end
+
+function ExponentialCovariance(length_scale)
+    return ExponentialCovariance{Tv}(Tv)
+end
+
 # Exponential covariance function
-function exponential(x::PointMeasurement, y::PointMeasurement; length_scale)
-    return exp(-norm(x.coordinate - y.coordinate) / length_scale)
+function (cov::ExponentialCovariance)(x::PointMeasurement, y::PointMeasurement)
+    return exp(-norm(x.coordinate - y.coordinate) / cov.length_scale)
 end
 
 # TODO: Implement Δδ
-function exponential(x::ΔδPointMeasurement, y::ΔδPointMeasurement; length_scale)
+function (cov::ExponentialCovariance)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
 end
 
-function exponential(x::ΔδPointMeasurement, y::PointMeasurement; length_scale)
-    return exponential(x, ΔδPointMeasurement(y); length_scale)
-end
-
-function exponential(x::AbstractVector{<:AbstractMeasurement}, y::AbstractVector{<:AbstractMeasurement}; length_scale)
-    out = Matrix{Float64}(undef, length(x), length(y))
-    for (i, xval) in enumerate(x)
-        for (j, yval) in enumerate(y)
-            out[i, j] = exponential(x, y; length_scale)
-        end
-    end
-    return out
-end 
-
-function exponential(x::AbstractVector{PointMeasurement{d}}, y::AbstractVector{PointMeasurement{d}}; length_scale)
-    out = Matrix{Float64}(undef, length(x), length(y))
-    for (i, xval) in enumerate(x)
-        for (j, yval) in enumerate(y)
-            out[i, j] = norm(xval - yval) / length_scale
-        end
-    end
-    out .= exp.(-out)
+function (cov::ExponentialCovariance)(x::ΔδPointMeasurement, y::PointMeasurement)
+    return cov(x, ΔδPointMeasurement(y))
 end
