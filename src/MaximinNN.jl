@@ -97,7 +97,6 @@ function maximin_ordering(x::AbstractMatrix; init_distances=fill(Inf, (size(x, 2
     return P, ℓ
 end
 
-
 # splits a given parent_list with parent scales ordered from coarse(large indices) to fine (small indices)
 function _split_into_supernodes(parent_list, ℓ, λ)
     out = Vector{Int}[]
@@ -131,7 +130,6 @@ end
 
 # taking as input the maximin ordering and the associated distances, computes the associated reverse maximin sparsity pattern
 # α determines what part of the sparsity pattern arises from the clustering as opposed to the the sparsity pattern of individual points. 
-# TODO: Still bugged
 function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, ρ, λ=1.5, α=1.0; Tree=KDTree, reconstruct_ordering=true)
     @assert λ > 1.0
     @assert 0.0 <= α <= 1.0
@@ -193,4 +191,49 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
         min_ℓ = min_ℓ / λ
     end
     return supernodes
+end
+
+# TODO:
+# recast in terms of helper function that has as input m, and an assignment to the locations, as well as location-supernodes and ordering
+function supernodal_reverse_maximin(m::AbstractVector{<:AbstractMeasurement}, m2x::AbstractArray{<:Integer}, x::AbstractArray, k_neighbors, ρ; λ=1.5, α=1.0)
+    # computes the maximin ordering
+    P_locations, ℓ =  maximin_ordering(x, k_neighbors)
+
+    # produces the supernodal pattern on the locations
+    location_supernodes = supernodal_reverse_maximin_sparsity_pattern(x, P_locations, ℓ, ρ, λ, α)
+
+    # Produces the array of arrays P_mixed. P_mixed[k] contains the indices of all measurements that are 
+    # located in the k-th location
+    P_mixed = Vector{Vector{Int}}(undef, size(x, 2))
+    for k = 1 : size(x, 2)
+        P_mixed[k] = Int[]
+    end
+    for (measurement_index, location_index) in enumerate(m2x)
+        push!(P_mixed[location_index], measurement_index)
+    end
+
+    # Concatenating the entries of P_mixed to obtain the ordering used on the measurements 
+    P = vcat(P_mixed...)
+    rev_P = Vector{Int}(undef, length(P))
+    rev_P[P] = 1 : length(P)
+
+    # constructing the supernodes of measurements
+    supernodes = Vector{IndexSuperNode{Int}}(undef, length(location_supernodes))
+    # We take the column and row indices of the location supernode concatenate the correspondint 
+    # indices of P_mixed. P_mixed contains the indices with respect to the original ordering
+    # To obtain the indices in the modified ordering, we concatenate with rev_P_locations
+    for k = 1 : length(supernodes)
+        column_indices = rev_P[vcat(P_mixed[location_supernodes[k].column_indices]...)]
+        row_indices = rev_P[vcat(P_mixed[location_supernodes[k].row_indices]...)]
+        supernodes[k] = IndexSuperNode{Int}(column_indices, row_indices)
+    end
+    assignment = IndirectSupernodalAssignment(supernodes, m[P])
+    return assignment, P
+end
+
+function supernodal_reverse_maximin(m::AbstractVector{<:AbstractPointMeasurement}, k_neighbors, ρ; λ=1.5, α=1.0)
+    x = hcat(Vector.(get_coordinate.(m))...)
+    m2x = 1 : length(m)
+
+    return supernodal_reverse_maximin(m, m2x, x, k_neighbors, ρ; λ=1.5, α=1.0)
 end
