@@ -1,1 +1,2 @@
-function factorize(𝒢::AbstractCovarianceFunction, supernodal_muea)
+# function factorize(𝒢::AbstractCovarianceFunction, )
+# end
