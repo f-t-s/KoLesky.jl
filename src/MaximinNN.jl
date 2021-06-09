@@ -9,6 +9,7 @@ function _update_distances!(nearest_distances::AbstractVector, id, new_distance)
 end
 
 # function to update the heap in the case of k-nearest neighbors 
+# The largest distance, and hence the distance used for the  length scale, is the first entry of the corresponding column
 function _update_distances!(nearest_distances::AbstractMatrix, id, new_distance)
     k_neighbors = size(nearest_distances, 1)
     # If the new distance is larger than the largest one in the stack, return the largest distance 
@@ -33,7 +34,7 @@ function _update_distances!(nearest_distances::AbstractMatrix, id, new_distance)
 end
 
 # including x, tree_function
-function maximin_ordering(x::AbstractMatrix, k_neighbors; init_distances=fill(Inf, (k_neighbors, size(x, 2))), Tree=KDTree)
+function maximin_ordering(x::AbstractMatrix, k_neighbors; init_distances=fill(typemax(eltype(x)), (k_neighbors, size(x, 2))), Tree=KDTree)
     # constructing the tree
     N = size(x, 2)
     tree = Tree(x)
@@ -67,7 +68,7 @@ function maximin_ordering(x::AbstractMatrix, k_neighbors; init_distances=fill(In
 end
 
 # including x, tree_function
-function maximin_ordering(x::AbstractMatrix; init_distances=fill(Inf, (size(x, 2))), Tree=KDTree)
+function maximin_ordering(x::AbstractMatrix; init_distances=fill(typemax(eltype(x)), (size(x, 2))), Tree=KDTree)
     # constructing the tree
     N = size(x, 2)
     tree = Tree(x)
@@ -96,6 +97,79 @@ function maximin_ordering(x::AbstractMatrix; init_distances=fill(Inf, (size(x, 2
     # returns the maximin ordering P together with the distance vector. 
     return P, ℓ
 end
+
+# function to compute the distance of each element to the nearest element in the tree
+function _construct_initial_distance(tree::Union{KDTree,BallTree}, x)
+    return nn(tree, x)[2]
+end
+
+function _construct_initial_distance(tree::Union{KDTree,BallTree}, x, k_neighbors)
+    if length(tree.data) >= k_neighbors
+        # take the sets of knns, sort them, and concatenate them horizontally
+        return hcat(sort!.(knn(tree, x, k_neighbors)[2], rev=true)...)
+    else
+        # if the tree is too small for the required number of neighbors (should not really happen)
+        # Perform knn only on the largest admissible k
+        k_max = length(tree.data)
+        out_distances = hcat(sort!.(knn(tree, x, k_max)[2], rev=true)...)
+        # Then padd remaining (leading) rows with typemax
+        return vcat(fill(typemax(eltype(out_distances)), (k_neighbors - k_max)), out_distances)
+    end
+end
+
+
+# combines multiple orderings of number 1 : Nₖ (represented by arrays Pₖ containing the indices in the order in which they appear)
+# to an ordering of the set 1 : ∑ Nₖ
+function concatenate_ordering(P_vec::AbstractVector{<:AbstractVector{<:Integer}})
+    offset = 0
+    P_out = eltype(eltype(P_vec))[]
+    for P in P_vec
+        append!(P_out, P_vec .+ offset)
+        offset += length(P_vec)
+    end
+    return P_out
+end 
+
+# A maximin ordering that forces the point sets x ∈ x_vec to be ordered in the order in which they appear in x_vec. 
+function maximin_ordering(x::AbstractVector{<:AbstractMatrix}; init_distances=[fill(typemax(eltype(eltype(x))), (size(xₖ, 2))) for xₖ in x], Tree=KDTree)
+
+    for (xₖ, k) in enumerate(x)
+        tree = Tree(xₖ)
+        for l in (k + 1) : length(x)
+            init_distances[l] .= min.(init_distances, _construct_initial_distance(tree, x))
+        end
+    end
+
+    P = Vector{Int}[]
+    ℓ = Vector{eltype(eltype(x))}[]
+    for (xₖ, k) in enumerate(x)
+        # create the ordering of k-th set of points
+        Pₖ, ℓₖ = maximin_ordering(xₖ; init_distances[k])
+        push!(P, ℓ)
+    end
+    return concatenate_ordering(P), vcat(ℓ...)
+end
+
+# A mehtod of the maximin ordering that forces the point sets x ∈ x_vec to be ordered in the order in which they appear in x_vec. 
+function maximin_ordering(x::AbstractVector{<:AbstractMatrix}, k_neighbors; init_distances=[fill(typemax(eltype(eltype(x))), (k_neighbors, size(xₖ, 2))) for xₖ in x], Tree=KDTree)
+
+    for (xₖ, k) in enumerate(x)
+        tree = Tree(xₖ)
+        for l in (k + 1) : length(x)
+            init_distances[l] .= min.(init_distances, _construct_initial_distance(tree, x, k_neighbors))
+        end
+    end
+
+    P = Vector{Int}[]
+    ℓ = Vector{eltype(eltype(x))}[]
+    for (xₖ, k) in enumerate(x)
+        # create the ordering of k-th set of points
+        Pₖ, ℓₖ = maximin_ordering(xₖ, k_neighbors; init_distances[k])
+        push!(P, ℓ)
+    end
+    return concatenate_ordering(P), vcat(ℓ...)
+end
+
 
 # splits a given parent_list with parent scales ordered from coarse(large indices) to fine (small indices)
 function _split_into_supernodes(parent_list, ℓ, λ)
@@ -130,7 +204,10 @@ end
 
 # taking as input the maximin ordering and the associated distances, computes the associated reverse maximin sparsity pattern
 # α determines what part of the sparsity pattern arises from the clustering as opposed to the the sparsity pattern of individual points. 
-function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, ρ, λ=1.5, α=1.0; Tree=KDTree, reconstruct_ordering=true)
+function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, ρ; lambda=1.5, alpha=1.0, Tree=KDTree, reconstruct_ordering=true)
+    # want to avoid user facing unicode 
+    λ = lambda
+    α = alpha
     @assert λ > 1.0
     @assert 0.0 <= α <= 1.0
     @assert α * ρ > 1
@@ -193,7 +270,35 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
     return supernodes
 end
 
-# TODO:
+# high-level driver routine for creating the supernodal ordering and sparisty pattern
+# Methods using 1-maximin ordering
+function ordering_and_sparsity_pattern(x::AbstractMatrix, ρ; init_distances=fill(typemax(eltype(x)), (size(x, 2))), lambda=1.5, alpha=1.0, Tree=KDTree)
+    P, ℓ = maximin_ordering(x; init_distances, Tree)
+    supernodes = supernodal_reverse_maximin_sparsity_pattern(x, P, ℓ, ρ; lambda, alpha, Tree)
+    return P, ℓ, supernodes
+end 
+
+function ordering_and_sparsity_pattern(x::AbstractVector{<:AbstractMatrix}, ρ; init_distances=init_distances=[fill(typemax(eltype(eltype(x))), (size(xₖ, 2))) for xₖ in x], lambda=1.5, alpha=1.0, Tree=KDTree)
+    P, ℓ = maximin_ordering(x; init_distances, Tree)
+    supernodes = supernodal_reverse_maximin_sparsity_pattern(x, P, ℓ, ρ; lambda, alpha, Tree)
+    return P, ℓ, supernodes
+end 
+
+# Methods using k-maximin ordering
+function ordering_and_sparsity_pattern(x::AbstractMatrix, k_neighbors, ρ; init_distances=fill(typemax(eltype(x)), (k_neighbors, size(x, 2))), lambda=1.5, alpha=1.0, Tree=KDTree)
+    P, ℓ = maximin_ordering(x, k_neighbors; init_distances, Tree)
+    supernodes = supernodal_reverse_maximin_sparsity_pattern(x, P, ℓ, ρ; lambda, alpha, Tree)
+    return P, ℓ, supernodes
+end 
+
+function ordering_and_sparsity_pattern(x::AbstractVector{<:AbstractMatrix}, k_neighbors, ρ; init_distances=init_distances=[fill(typemax(eltype(eltype(x))), (k_neighbors, size(xₖ, 2))) for xₖ in x], lambda=1.5, alpha=1.0, Tree=KDTree)
+    P, ℓ = maximin_ordering(x, k_neighbors; init_distances, Tree)
+    supernodes = supernodal_reverse_maximin_sparsity_pattern(x, P, ℓ, ρ; lambda, alpha, Tree)
+    return P, ℓ, supernodes
+end 
+
+
+
 # recast in terms of helper function that has as input m, and an assignment to the locations, as well as location-supernodes and ordering
 function supernodal_reverse_maximin(m::AbstractVector{<:AbstractMeasurement}, m2x::AbstractArray{<:Integer}, x::AbstractArray, k_neighbors, ρ; λ=1.5, α=1.0)
     # computes the maximin ordering
@@ -234,6 +339,6 @@ end
 function supernodal_reverse_maximin(m::AbstractVector{<:AbstractPointMeasurement}, k_neighbors, ρ; λ=1.5, α=1.0)
     x = hcat(Vector.(get_coordinate.(m))...)
     m2x = 1 : length(m)
-
     return supernodal_reverse_maximin(m, m2x, x, k_neighbors, ρ; λ=1.5, α=1.0)
 end
+
