@@ -1,16 +1,16 @@
 import LinearAlgebra.norm
 
-abstract type AbstractCovarianceFunction end 
+abstract type AbstractCovarianceFunction{Tv} end 
 
 # automatically implements a mutating batched version of a given covariance function 
-function (cov<:AbstractCovarianceFunction)(out::AbstractMatrix, x_vec::AbstractVector{<:AbstractMeasurement}, y_vec::AbstractVector{<:AbstractMeasurement})
+function (cov::AbstractCovarianceFunction)(out::AbstractMatrix, x_vec::AbstractVector{<:AbstractMeasurement}, y_vec::AbstractVector{<:AbstractMeasurement})
     for cartesian in CartesianIndices(out) 
         out[cartesian] = cov(x_vec[cartesian[1]], y_vec[cartesian[2]])
     end
 end
 
 # The exponential covariance function
-struct ExponentialCovariance{Tv}<:AbstractCovarianceFunction
+struct ExponentialCovariance{Tv}<:AbstractCovarianceFunction{Tv}
     length_scale::Tv
 end
 

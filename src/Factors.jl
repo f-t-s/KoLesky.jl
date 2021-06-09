@@ -1,4 +1,4 @@
-import LinearAlgebra.Factorization
+import LinearAlgebra: Factorization, Cholesky
 import SparseArrays.SparseMatrixCSC
 abstract type AbstractKLFactorization{Tv}<:Factorization{Tv} end
 # An "Explicit" Cholesky factorization of a kernel matrix.
@@ -10,11 +10,11 @@ struct ExplicitKLFactorization{Tv,Ti,Tm,Tc}<:AbstractKLFactorization{Tv}
     # A covariance function
     𝒢::Tc
     # (Inverse-)Cholesky factor
-    L::SparseMatrixCSC{RT,Int}
+    L::SparseMatrixCSC{Tv,Ti}
 end 
 
 # An implicit Cholesky factorization of a kernel matrix that allows to perform prediction and compute the likelihood without explicitly storing the matrix
-struct ImplicitKLFactorizationRBF{Tv,Ti,Tm,Tc}<:AbstractKLFactorization{Tv}
+struct ImplicitKLFactorization{Tv,Ti,Tm,Tc<:AbstractCovarianceFunction{Tv}}<:AbstractKLFactorization{Tv}
     # Ordering
     P::Vector{Ti}
     # Skeletons that describe the sparsity pattern
@@ -23,9 +23,53 @@ struct ImplicitKLFactorizationRBF{Tv,Ti,Tm,Tc}<:AbstractKLFactorization{Tv}
     𝒢::Tc
 end
 
-# For now, we are inhereting the real types from the location vectors, and we assume the use of the euclidean distance, and an rbf
-# function ImplicitKLFactorizationRBF(𝒢!, x::AbstractVector{<:Point}, ρ, λ)
-#     P, ~, ~, skeletons = ordering_and_skeletons(x, ρ, λ)
-#     return ImplicitKLFactorizationRBF{eltype(eltype(x)), eltype(x)}(P, skeletons, x, 𝒢!)
-# end
+# Construct an implicit KL Factorization 
+# using 1-maximin and a single set of measurments
+function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ; lambda=15., alpha=1.0, Tree=KDTree) where Tv
+    x = reduce(hcat, collect.(get_coordinate.(measurements)))
+    P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
+    Ti = eltype(P)
+    measurements = collect(measurements)
+    supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
+end
 
+# using k-maximin and a single set of measurments
+function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ, k_neighbors; lambda=15., alpha=1.0, Tree=KDTree) where Tv
+    x = reduce(hcat, collect.(get_coordinate.(measurements)))
+    P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
+    Ti = eltype(P)
+    measurements = collect(measurements)
+    supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
+end
+
+# using 1-maximin and multiple set of measurments
+function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ; lambda=15., alpha=1.0, Tree=KDTree) where Tv
+    # x is now a vector of matrices
+    x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
+    P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
+    Ti = eltype(P)
+    measurements = collect(measurements)
+    supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
+end
+
+# using k-maximin and multiple set of measurments
+function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ, k_neighbors; lambda=15., alpha=1.0, Tree=KDTree) where Tv
+    # x is now a vector of matrices
+    x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
+    P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
+    Ti = eltype(P)
+    # obtain measurements by concatenation
+    measurements = reduce(vcat, collect.(measurements))
+    supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
+end
+
+# The dense, exact Cholesky factorization. Only for debugging purposes.
+struct DenseCholeskyFactorization{Tv,Tm,Tc}<:AbstractKLFactorization{Tv}
+    L::Cholesky{Tv,Matrix{Tv}}
+    measurements::Tm
+    𝒢
+end

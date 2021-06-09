@@ -22,10 +22,7 @@ x = x[:, P]
 
 m = KoLesky.point_measurements(x)
 
-supernodal_assignment, P = KoLesky.supernodal_reverse_maximin(m, 3, 3.0)
-
-
-# Plototing the supernodes
+# Plotting the supernodes
 outplot = scatter(xlims=(-0.1,1.1), ylims=(-0.1,1.1),aspect_ratio=:equal,)
 for k in [1331]
     node = supernodes[k]
