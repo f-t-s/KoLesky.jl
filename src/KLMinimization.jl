@@ -1,5 +1,6 @@
 import SparseArrays: sparse, istriu
 import Threads: @threads, threadid, nthreads
+import LinearAlgebra: ldiv!
 function _create_U_indices(supernodes::AbstractVector{<:IndexSuperNode{Ti}}) where Ti
     I = Ti[]
     J = Ti[]
@@ -32,16 +33,25 @@ function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::
     # Check that matrix is really upper triangular
     @assert istriu(U)
 
-    @threads for node in supernodal_assignment.supernodes, for i in row_indices(node), for j in column_indices(node)
+    @threads for node in supernodal_assignment.supernodes for i in row_indices(node) for j in column_indices(node)
         # extracting the thread's buffers
         n_rows = size(node, 1)
         n_columns = size(node, 2)
         buffer_L = reshape(view(buffer_L[threadid()], 1 : n_rows^2), n_rows, n_rows), 
         buffer_U = reshape(view(buffer_U[threadid()], 1 : n_rows * n_columns), n_rows, n_columns), 
-        buffer_m = reshape(view(buffer_m[threadid()], 1 : n_rows)
+        buffer_m = reshape(view(buffer_m[threadid()], 1 : n_rows))
+        buffer_U .= 0
+        for (j, i) in enumerate((n_rows - n_columns + 1) : n_rows)
+            buffer_U[i, j] = 1
+        end
         # Compute the local covariance Matrix 
         𝒢(buffer_L, buffer_m) 
         # Computing the Cholesky factorization
-        cholesky!(buffer_L)
+        chol = cholesky!(buffer_L)
+        ldiv!(buffer_U, chol.U, buffer_U)
+        # writing the results into the sparse matrix structure
+        for (k, index) in enumerate(column_indices(node))
+            U.nzvals[U.colptr[index] : (U.colptr[index + 1] - 1)] .= buffer_U[1 : (n_rows - n_columns + k),  k]
+        end
     end
 end
