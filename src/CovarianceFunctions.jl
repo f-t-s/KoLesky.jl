@@ -3,11 +3,23 @@ import LinearAlgebra.norm
 abstract type AbstractCovarianceFunction{Tv} end 
 
 # automatically implements a mutating batched version of a given covariance function 
-function (cov::AbstractCovarianceFunction)(out::AbstractMatrix, x_vec::AbstractVector{<:AbstractMeasurement}, y_vec::AbstractVector{<:AbstractMeasurement})
+function (cov::AbstractCovarianceFunction{Tv})(out::AbstractMatrix{Tv}, x_vec::AbstractVector{<:AbstractMeasurement}, y_vec::AbstractVector{<:AbstractMeasurement})
     for cartesian in CartesianIndices(out) 
         out[cartesian] = cov(x_vec[cartesian[1]], y_vec[cartesian[2]])
     end
 end
+
+# automatically implements a mutating batched version of a given covariance function, using symmetry
+function (cov::AbstractCovarianceFunction{Tv})(out::AbstractMatrix{Tv}, x_vec::AbstractVector{<:AbstractMeasurement})
+    for cartesian in CartesianIndices(out) 
+        if cartesian[1] >= cartesian[2]
+            out[cartesian] = cov(x_vec[cartesian[1]], y_vec[cartesian[2]])
+        else
+            out[cartesian] = out[cartesian[2], cartesian[1]]
+        end
+    end
+end
+
 
 # The exponential covariance function
 struct ExponentialCovariance{Tv}<:AbstractCovarianceFunction{Tv}

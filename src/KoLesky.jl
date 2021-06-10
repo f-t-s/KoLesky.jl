@@ -8,5 +8,5 @@ include("SuperNodes.jl")
 include("MutableHeap.jl")
 include("MaximinNN.jl")
 include("Factors.jl")
-include("KLMinimizatin.jl")
+include("KLMinimization.jl")
 end

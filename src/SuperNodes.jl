@@ -1,11 +1,25 @@
+import Base.size
+
 # In this file we introduce the data types for super nodes
 abstract type AbstractSuperNode end
 
 # A supernode that contains indices to measurements
-struct IndexSuperNode{Ti<:Integer}
+struct IndexSuperNode{Ti}
     column_indices::Vector{Ti}
     row_indices::Vector{Ti}
 end
+
+function column_indices(node::IndexSuperNode) return node.column_indices end
+function row_indices(node::IndexSuperNode) return node.row_indices end
+
+function size(in::IndexSuperNode)
+    return (length(in.column_indices) , length(in.row_indices))
+end
+
+function size(in::IndexSuperNode, dim)
+    return (length(in.column_indices) , length(in.row_indices))[dim]
+end
+
 
 abstract type AbstractSupernodalAssignment end
 
