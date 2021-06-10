@@ -54,4 +54,5 @@ function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::
             U.nzvals[U.colptr[index] : (U.colptr[index + 1] - 1)] .= buffer_U[1 : (n_rows - n_columns + k),  k]
         end
     end
+    return U
 end
