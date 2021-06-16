@@ -28,7 +28,9 @@ end
 
 # Exponential covariance function
 function (cov::ExponentialCovariance)(x::PointMeasurement, y::PointMeasurement)
-    return exp(-norm(x.coordinate - y.coordinate) / cov.length_scale)
+    dist = norm(x.coordinate - y.coordinate);
+    sigma = cov.length_scale;
+    return (1+dist/sigma + dist^2/(3*sigma^2)) * exp(-dist/sigma)
 end
 
 # TODO: Implement Δδ
@@ -42,7 +44,7 @@ function (cov::ExponentialCovariance)(x::ΔδPointMeasurement, y::ΔδPointMeasu
     D4F(t,a) = ((4*a-t)/(3*a^5) + (4*a^2-6*a*t+t^2)/(3*a^6)) * exp(-t/a);
     dist = norm(x.coordinate - y.coordinate);
     sigma = cov.length_scale;
-    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*exp(-dist/sigma)
+    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*(1+dist/sigma + dist^2/(3*sigma^2)) * exp(-dist/sigma)
 end
 
 
