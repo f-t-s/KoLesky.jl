@@ -31,9 +31,10 @@ struct IndirectSupernodalAssignment{Ti<:Integer, Tm<:AbstractMeasurement}
     measurements::Vector{Tm}
 end
 
-function istril(node::IndexSuperNode)
-    return minimum(node.row_indices) >= maximum(node.column_indices)
-end
+# presently buggy
+# function istriu(node::IndexSuperNode)
+#     return minimum(node.row_indices) >= maximum(node.column_indices)
+# end
 
 # importing issorted to overload it. Okay, since only involving custom types
 import Base.issorted

@@ -1,5 +1,5 @@
 import SparseArrays: sparse, istriu
-import Threads: @threads, threadid, nthreads
+import Base.Threads: @threads, threadid, nthreads
 import LinearAlgebra: ldiv!
 function _create_U_indices(supernodes::AbstractVector{<:IndexSuperNode{Ti}}) where Ti
     I = Ti[]
@@ -14,8 +14,8 @@ function _create_U_indices(supernodes::AbstractVector{<:IndexSuperNode{Ti}}) whe
 end
 
 # computes the upper triangular 
-import Threads: nthreads, @threads
-function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::IndirectSupernodalAssignment{Ti,Tv}) where Tv
+import Base.Threads: nthreads, @threads
+function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::IndirectSupernodalAssignment{Ti,Tv}) where {Tv,Ti}
     # Determines the maximum amount of space needed 
     maximum_buffer_L_size = maximum((maximum.(size.(supernodal_assignment.supernodes)))^2)
     maximum_buffer_U_size = maximum(maximum.(size.(supernodal_assignment.supernodes, 1) .* size.(supernodal_assignment.supernodes, 2)))
@@ -33,12 +33,12 @@ function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::
     # Check that matrix is really upper triangular
     @assert istriu(U)
 
-    @threads for node in supernodal_assignment.supernodes for i in row_indices(node) for j in column_indices(node)
+    @threads for node in supernodal_assignment.supernodes
         # extracting the thread's buffers
         n_rows = size(node, 1)
         n_columns = size(node, 2)
-        buffer_L = reshape(view(buffer_L[threadid()], 1 : n_rows^2), n_rows, n_rows), 
-        buffer_U = reshape(view(buffer_U[threadid()], 1 : n_rows * n_columns), n_rows, n_columns), 
+        buffer_L = reshape(view(buffer_L[threadid()], 1 : n_rows^2), n_rows, n_rows) 
+        buffer_U = reshape(view(buffer_U[threadid()], 1 : (n_rows * n_columns)), n_rows, n_columns) 
         buffer_m = reshape(view(buffer_m[threadid()], 1 : n_rows))
         buffer_U .= 0
         for (j, i) in enumerate((n_rows - n_columns + 1) : n_rows)

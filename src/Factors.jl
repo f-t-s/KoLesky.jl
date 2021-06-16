@@ -61,7 +61,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
 end
 
 # using k-maximin and multiple set of measurments
-function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
+function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
     # x is now a vector of matrices
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
@@ -105,7 +105,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
 end
 
 # using k-maximin and multiple set of measurments
-function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
+function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
     # x is now a vector of matrices
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
