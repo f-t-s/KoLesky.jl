@@ -123,8 +123,8 @@ function concatenate_ordering(P_vec::AbstractVector{<:AbstractVector{<:Integer}}
     offset = 0
     P_out = eltype(eltype(P_vec))[]
     for P in P_vec
-        append!(P_out, P_vec .+ offset)
-        offset += length(P_vec)
+        append!(P_out, P .+ offset)
+        offset += length(P)
     end
     return P_out
 end 
