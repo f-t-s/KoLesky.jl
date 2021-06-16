@@ -41,7 +41,7 @@ function maximin_ordering(x::AbstractMatrix, k_neighbors; init_distances=fill(ty
     nearest_distances= copy(init_distances)
     @assert size(nearest_distances) == (k_neighbors, N)
     for k = 1 : N
-        sort!(vec(view(nearest_distances, :, k)); rev=true)
+        sort!(vec(view(nearest_distances, :, k)); rev=true) 
     end
     heap = MutableHeap(vec(nearest_distances[1, :]))
     ℓ = Vector{eltype(init_distances)}(undef, N)

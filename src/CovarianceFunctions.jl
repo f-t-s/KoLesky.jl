@@ -13,7 +13,7 @@ end
 function (cov::AbstractCovarianceFunction{Tv})(out::AbstractMatrix{Tv}, x_vec::AbstractVector{<:AbstractMeasurement}) where Tv
     for cartesian in CartesianIndices(out) 
         if cartesian[1] >= cartesian[2]
-            out[cartesian] = cov(x_vec[cartesian[1]], y_vec[cartesian[2]])
+            out[cartesian] = cov(x_vec[cartesian[1]], x_vec[cartesian[2]])
         else
             out[cartesian] = out[cartesian[2], cartesian[1]]
         end
