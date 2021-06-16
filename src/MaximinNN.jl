@@ -144,7 +144,8 @@ function maximin_ordering(x::AbstractVector{<:AbstractMatrix}; init_distances=[f
     for (xₖ, k) in enumerate(x)
         # create the ordering of k-th set of points
         Pₖ, ℓₖ = maximin_ordering(xₖ; init_distances=init_distances[k])
-        push!(P, ℓ)
+        push!(P, Pₖ)
+        push!(ℓ, ℓₖ)
     end
     return concatenate_ordering(P), vcat(ℓ...)
 end
@@ -164,11 +165,11 @@ function maximin_ordering(x::AbstractVector{<:AbstractMatrix}, k_neighbors; init
     for (xₖ, k) in enumerate(x)
         # create the ordering of k-th set of points
         Pₖ, ℓₖ = maximin_ordering(xₖ, k_neighbors; init_distances=init_distances[k])
-        push!(P, ℓ)
+        push!(P, Pₖ)
+        push!(ℓ, ℓₖ)
     end
     return concatenate_ordering(P), vcat(ℓ...)
 end
-
 
 # splits a given parent_list with parent scales ordered from coarse(large indices) to fine (small indices)
 function _split_into_supernodes(parent_list, ℓ, λ)
