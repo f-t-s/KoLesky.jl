@@ -45,6 +45,11 @@ function (cov::ExponentialCovariance)(x::ΔδPointMeasurement, y::ΔδPointMeasu
     return w1_x*w2_x*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*exp(-dist/sigma)
 end
 
+
 function (cov::ExponentialCovariance)(x::ΔδPointMeasurement, y::PointMeasurement)
     return cov(x, ΔδPointMeasurement(y))
+end
+
+function (cov::ExponentialCovariance)(x::PointMeasurement, y::ΔδPointMeasurement)
+    return (cov::ExponentialCovariance)(y,x)
 end
