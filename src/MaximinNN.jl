@@ -141,7 +141,7 @@ function maximin_ordering(x::AbstractVector{<:AbstractMatrix}; init_distances=[f
 
     P = Vector{Int}[]
     ℓ = Vector{eltype(eltype(x))}[]
-    for (xₖ, k) in enumerate(x)
+    for (k, xₖ) in enumerate(x)
         # create the ordering of k-th set of points
         Pₖ, ℓₖ = maximin_ordering(xₖ; init_distances=init_distances[k])
         push!(P, Pₖ)
@@ -162,7 +162,7 @@ function maximin_ordering(x::AbstractVector{<:AbstractMatrix}, k_neighbors; init
 
     P = Vector{Int}[]
     ℓ = Vector{eltype(eltype(x))}[]
-    for (xₖ, k) in enumerate(x)
+    for (k, xₖ) in enumerate(x)
         # create the ordering of k-th set of points
         Pₖ, ℓₖ = maximin_ordering(xₖ, k_neighbors; init_distances=init_distances[k])
         push!(P, Pₖ)
