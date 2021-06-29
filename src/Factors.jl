@@ -35,8 +35,8 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
     measurements = collect(measurements)
-    supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
+    supernodes = IndirectSupernodalAssignment(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
 
 # using k-maximin and a single set of measurments
@@ -45,8 +45,8 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
     Ti = eltype(P)
     measurements = collect(measurements)
-    supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
+    supernodes = IndirectSupernodalAssignment(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
 
 # using 1-maximin and multiple set of measurments
@@ -56,8 +56,8 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
     measurements = collect(measurements)
-    supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
+    supernodes = IndirectSupernodalAssignment(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
 
 # using k-maximin and multiple set of measurments
@@ -68,7 +68,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     Ti = eltype(P)
     # obtain measurements by concatenation
     measurements = reduce(vcat, collect.(measurements))
-    supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
+    supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
 end
 

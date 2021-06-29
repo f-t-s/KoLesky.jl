@@ -20,13 +20,10 @@ x = x[:, P]
 # end
 # display(outplot)
 
-m = KoLesky.point_measurements(x)
+measurements = KoLesky.point_measurements(x)
 
-# Plotting the supernodes
-outplot = scatter(xlims=(-0.1,1.1), ylims=(-0.1,1.1),aspect_ratio=:equal,)
-for k in [1331]
-    node = supernodes[k]
-    scatter!(outplot, x[1, node.column_indices], x[2, node.column_indices], markersize=5)
-    scatter!(outplot, x[1, node.row_indices], x[2, node.row_indices])
-end
-display(outplot)
+𝒢 = KoLesky.ExponentialCovariance(0.1)
+
+implicit_factor = KoLesky.ImplicitKLFactorization(𝒢, measurements, 3.0)
+
+explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)

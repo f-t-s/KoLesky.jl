@@ -31,6 +31,10 @@ struct IndirectSupernodalAssignment{Ti<:Integer, Tm<:AbstractMeasurement}
     measurements::Vector{Tm}
 end
 
+function IndirectSupernodalAssignment(supernodes::Vector{IndexSuperNode{<:Ti}}, measurements::Vector{<:AbstractMeasurement}) where Ti<:Integer
+    return IndirectSupernodalAssignment{Ti,eltyp72, 79e(measurements)}(supernodes, measurements)
+end
+
 # presently buggy
 # function istriu(node::IndexSuperNode)
 #     return minimum(node.row_indices) >= maximum(node.column_indices)
