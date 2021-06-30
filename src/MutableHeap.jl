@@ -79,7 +79,7 @@ function MutableHeap(values::AbstractVector)
   end
   perm = sortperm(nodes,rev=true)
   nodes .= nodes[perm]
-  lookup .= lookup[perm]
+  lookup[perm] .= 1 : length(perm)
   return MutableHeap{eltype(nodes), eltype(lookup)}(nodes, lookup)
 end
 

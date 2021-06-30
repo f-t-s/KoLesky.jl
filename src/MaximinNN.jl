@@ -156,6 +156,7 @@ end
 # A method of the maximin ordering that forces the point sets x ∈ x_vec to be ordered in the order in which they appear in x_vec. 
 function maximin_ordering(x::AbstractVector{<:AbstractMatrix}, k_neighbors; init_distances=[fill(typemax(eltype(eltype(x))), (k_neighbors, size(xₖ, 2))) for xₖ in x], Tree=KDTree)
 
+
     for (k, xₖ) in enumerate(x)
         tree = Tree(xₖ)
         for l in (k + 1) : length(x)
@@ -165,6 +166,7 @@ function maximin_ordering(x::AbstractVector{<:AbstractMatrix}, k_neighbors; init
 
     P = Vector{Int}[]
     ℓ = Vector{eltype(eltype(x))}[]
+
     for (k, xₖ) in enumerate(x)
         # create the ordering of k-th set of points
         Pₖ, ℓₖ = maximin_ordering(xₖ, k_neighbors; init_distances=init_distances[k])
