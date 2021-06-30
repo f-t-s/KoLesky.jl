@@ -294,7 +294,7 @@ function ordering_and_sparsity_pattern(x::AbstractMatrix, k_neighbors, ρ; init_
     return P, ℓ, supernodes
 end 
 
-function ordering_and_sparsity_pattern(x::AbstractVector{<:AbstractMatrix}, k_neighbors, ρ; init_distances=init_distances=[fill(typemax(eltype(eltype(x))), (k_neighbors, size(xₖ, 2))) for xₖ in x], lambda=1.5, alpha=1.0, Tree=KDTree)
+function ordering_and_sparsity_pattern(x::AbstractVector{<:AbstractMatrix}, k_neighbors, ρ; init_distances=[fill(typemax(eltype(eltype(x))), (k_neighbors, size(xₖ, 2))) for xₖ in x], lambda=1.5, alpha=1.0, Tree=KDTree)
     P, ℓ = maximin_ordering(x, k_neighbors; init_distances, Tree)
     supernodes = supernodal_reverse_maximin_sparsity_pattern(reduce(hcat, x), P, ℓ, ρ; lambda, alpha, Tree)
     return P, ℓ, supernodes
