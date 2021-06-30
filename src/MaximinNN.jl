@@ -134,8 +134,11 @@ function maximin_ordering(x::AbstractVector{<:AbstractMatrix}; init_distances=[f
 
     for (k, xₖ) in enumerate(x)
         tree = Tree(xₖ)
+        # Assign the initial distances to all the subsequent scales. 
+        # Might be better use the union over all xₖ for k < l, but if the size of xₖ is much 
+        # larger than k_neighbors  
         for l in (k + 1) : length(x)
-            init_distances[l] .= min.(init_distances, _construct_initial_distance(tree, x))
+            init_distances[l] .= min.(init_distances[l], _construct_initial_distance(tree, x[l]))
         end
     end
 
@@ -150,13 +153,13 @@ function maximin_ordering(x::AbstractVector{<:AbstractMatrix}; init_distances=[f
     return concatenate_ordering(P), vcat(ℓ...)
 end
 
-# A mehtod of the maximin ordering that forces the point sets x ∈ x_vec to be ordered in the order in which they appear in x_vec. 
+# A method of the maximin ordering that forces the point sets x ∈ x_vec to be ordered in the order in which they appear in x_vec. 
 function maximin_ordering(x::AbstractVector{<:AbstractMatrix}, k_neighbors; init_distances=[fill(typemax(eltype(eltype(x))), (k_neighbors, size(xₖ, 2))) for xₖ in x], Tree=KDTree)
 
     for (k, xₖ) in enumerate(x)
         tree = Tree(xₖ)
         for l in (k + 1) : length(x)
-            init_distances[l] .= min.(init_distances, _construct_initial_distance(tree, x, k_neighbors))
+            init_distances[l] .= min.(init_distances[l], _construct_initial_distance(tree, x[l], k_neighbors))
         end
     end
 
@@ -280,7 +283,7 @@ end
 
 function ordering_and_sparsity_pattern(x::AbstractVector{<:AbstractMatrix}, ρ; init_distances=init_distances=[fill(typemax(eltype(eltype(x))), (size(xₖ, 2))) for xₖ in x], lambda=1.5, alpha=1.0, Tree=KDTree)
     P, ℓ = maximin_ordering(x; init_distances, Tree)
-    supernodes = supernodal_reverse_maximin_sparsity_pattern(x, P, ℓ, ρ; lambda, alpha, Tree)
+    supernodes = supernodal_reverse_maximin_sparsity_pattern(reduce(hcat, x), P, ℓ, ρ; lambda, alpha, Tree)
     return P, ℓ, supernodes
 end 
 
@@ -293,6 +296,6 @@ end
 
 function ordering_and_sparsity_pattern(x::AbstractVector{<:AbstractMatrix}, k_neighbors, ρ; init_distances=init_distances=[fill(typemax(eltype(eltype(x))), (k_neighbors, size(xₖ, 2))) for xₖ in x], lambda=1.5, alpha=1.0, Tree=KDTree)
     P, ℓ = maximin_ordering(x, k_neighbors; init_distances, Tree)
-    supernodes = supernodal_reverse_maximin_sparsity_pattern(x, P, ℓ, ρ; lambda, alpha, Tree)
+    supernodes = supernodal_reverse_maximin_sparsity_pattern(reduce(hcat, x), P, ℓ, ρ; lambda, alpha, Tree)
     return P, ℓ, supernodes
 end 

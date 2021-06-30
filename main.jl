@@ -20,10 +20,13 @@ x = x[:, P]
 # end
 # display(outplot)
 
-measurements = KoLesky.point_measurements(x)
 
-𝒢 = KoLesky.ExponentialCovariance(0.1)
+KoLesky.ordering_and_sparsity_pattern([rand(3, 10), rand(3, 9)], 3, 3.0)
 
-implicit_factor = KoLesky.ImplicitKLFactorization(𝒢, measurements, 3.0)
-
-explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)
+# measurements = KoLesky.point_measurements(x)
+# 
+# 𝒢 = KoLesky.ExponentialCovariance(0.1)
+# 
+# implicit_factor = KoLesky.ImplicitKLFactorization(𝒢, measurements, 3.0)
+# 
+# explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)
