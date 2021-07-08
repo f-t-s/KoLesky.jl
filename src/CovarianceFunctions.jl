@@ -69,8 +69,8 @@ function (cov::ExponentialCovariance)(x::ΔδPointMeasurement, y::ΔδPointMeasu
     w2_x = x.weight_δ;
     w1_y = y.weight_Δ;
     w2_y = y.weight_δ;
-    D2F(d,rho) = (d - 2*rho^2)/(rho^4)*exp(-d/(2*rho^2));
-    D4F(d,rho) = (8*rho^4-8*rho^2*d+d^2)/(rho^8)*exp(-d/(2*rho^2));
+    D2F(t,rho) = (t - 2*rho^2)/(rho^4)*exp(-t/(2*rho^2));
+    D4F(t,rho) = (8*rho^4-8*rho^2*t+t^2)/(rho^8)*exp(-t/(2*rho^2));
     dist = norm(x.coordinate - y.coordinate);
     sigma = cov.length_scale;
     return w1_x*w1_y*D4F(dist^2,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist^2,sigma) + w2_x*w2_y*exp(-dist^2/(2*sigma^2))
