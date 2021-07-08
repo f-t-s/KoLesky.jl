@@ -23,28 +23,28 @@ end
 
 
 # The Matern covariance function
-struct MaternCovariance{Tv}<:AbstractCovarianceFunction{Tv}
+struct MaternCovariance5_2{Tv}<:AbstractCovarianceFunction{Tv}
     length_scale::Tv
 end
 
 # Matern covariance function
-function (cov::MaternCovariance)(x::PointMeasurement, y::PointMeasurement)
+function (cov::MaternCovariance5_2)(x::PointMeasurement, y::PointMeasurement)
     dist = norm(x.coordinate - y.coordinate);
     sigma = cov.length_scale;
-    return (1+dist/sigma + dist^2/(3*sigma^2)) * exp(-dist/sigma)
+    return (1+sqrt(5)*dist/sigma + 5*dist^2/(3*sigma^2)) * exp(-sqrt(5)*dist/sigma)
 end
 
-function (cov::MaternCovariance)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
+function (cov::MaternCovariance5_2)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
     d = length(x.coordinate);
     w1_x = x.weight_Δ;
     w2_x = x.weight_δ;
     w1_y = y.weight_Δ;
     w2_y = y.weight_δ;
-    D2F(t,a) = (-(a^2+a*t-t^2)/(3*a^4)-(a+t)/(3*a^3)) * exp(-t/a);
-    D4F(t,a) = ((4*a-t)/(3*a^5) + (4*a^2-6*a*t+t^2)/(3*a^6)) * exp(-t/a);
+    D2F(t,a) = -(2*a^2+2*sqrt(5)*a*t-5*t^2)/(3*a^4) * exp(-sqrt(5)*t/a);
+    D4F(t,a) = 25*(8*a^2-7*sqrt(5)*a*t+5*t^2)/(3*a^6) * exp(-sqrt(5)*t/a);
     dist = norm(x.coordinate - y.coordinate);
     sigma = cov.length_scale;
-    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*(1+dist/sigma + dist^2/(3*sigma^2)) * exp(-dist/sigma)
+    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*(1+sqrt(5)*dist/sigma + 5*dist^2/(3*sigma^2)) * exp(-sqrt(5)*dist/sigma)
 end
 
 
@@ -57,17 +57,17 @@ end
 # end
 
 # The exponential covariance function
-struct ExponentialCovariance{Tv}<:AbstractCovarianceFunction{Tv}
+struct GaussianCovariance{Tv}<:AbstractCovarianceFunction{Tv}
     length_scale::Tv
 end
 
-function (cov::ExponentialCovariance)(x::PointMeasurement, y::PointMeasurement)
+function (cov::GaussianCovariance)(x::PointMeasurement, y::PointMeasurement)
     dist = norm(x.coordinate - y.coordinate);
     sigma = cov.length_scale;
     return exp(-dist^2/(2*sigma^2))
 end
 
-function (cov::ExponentialCovariance)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
+function (cov::GaussianCovariance)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
     d = length(x.coordinate);
     w1_x = x.weight_Δ;
     w2_x = x.weight_δ;
