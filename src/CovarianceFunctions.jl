@@ -20,7 +20,23 @@ function (cov::AbstractCovarianceFunction{Tv})(out::AbstractMatrix{Tv}, x_vec::A
     end
 end
 
+struct MaternCovariance1_2{Tv}<:AbstractCovarianceFunction{Tv}
+    length_scale::Tv
+end
+function (cov::MaternCovariance1_2)(x::PointMeasurement, y::PointMeasurement)
+    dist = norm(x.coordinate - y.coordinate);
+    sigma = cov.length_scale;
+    return exp(-dist/sigma)
+end
 
+struct MaternCovariance3_2{Tv}<:AbstractCovarianceFunction{Tv}
+    length_scale::Tv
+end
+function (cov::MaternCovariance3_2)(x::PointMeasurement, y::PointMeasurement)
+    dist = norm(x.coordinate - y.coordinate);
+    sigma = cov.length_scale;
+    return (1+sqrt(3)*dist/sigma)*exp(-sqrt(3)*dist/sigma)
+end
 
 # The Matern covariance function
 struct MaternCovariance5_2{Tv}<:AbstractCovarianceFunction{Tv}
@@ -124,7 +140,6 @@ function (cov::MaternCovariance11_2)(x::ΔδPointMeasurement, y::ΔδPointMeasur
     sigma = cov.length_scale;
     return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*F(dist,sigma)
 end
-
 
 # The exponential covariance function
 struct GaussianCovariance{Tv}<:AbstractCovarianceFunction{Tv}
