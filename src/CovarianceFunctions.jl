@@ -99,6 +99,33 @@ function (cov::MaternCovariance9_2)(x::ΔδPointMeasurement, y::ΔδPointMeasure
     return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*F(dist,sigma)
 end
 
+struct MaternCovariance11_2{Tv}<:AbstractCovarianceFunction{Tv}
+    length_scale::Tv
+end
+
+# Matern covariance function
+function (cov::MaternCovariance11_2)(x::PointMeasurement, y::PointMeasurement)
+    dist = norm(x.coordinate - y.coordinate);
+    sigma = cov.length_scale;
+    F(t,a) = (945*a^5+945*sqrt(11)*a^4*t+4620*a^3*t^2+1155*sqrt(11)*a^2*t^3+1815*a*t^4+121*sqrt(11)*t^5)/(945*a^5)*exp(-sqrt(11)*t/a);
+    return F(dist,sigma)
+end
+
+function (cov::MaternCovariance11_2)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
+    d = length(x.coordinate);
+    w1_x = x.weight_Δ;
+    w2_x = x.weight_δ;
+    w1_y = y.weight_Δ;
+    w2_y = y.weight_δ;
+    F(t,a) = (945*a^5+945*sqrt(11)*a^4*t+4620*a^3*t^2+1155*sqrt(11)*a^2*t^3+1815*a*t^4+121*sqrt(11)*t^5)/(945*a^5)*exp(-sqrt(11)*t/a);
+    D2F(t,a) = -11*(210*a^5+210*sqrt(11)*a^4*t+825*a^3*t^2+55*sqrt(11)*a^2*t^3-484*a*t^4-121*sqrt(11)*t^5)/(945*a^7)*exp(-sqrt(11)*t/a);
+    D4F(t,a) = 121*(120*a^5+120*sqrt(11)*a^4*t+264*a^3*t^2-176*sqrt(11)*a^2*t^3-847*a*t^4+121*sqrt(11)*t^5)/(945*a^9)*exp(-sqrt(11)*t/a);
+    dist = norm(x.coordinate - y.coordinate);
+    sigma = cov.length_scale;
+    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*F(dist,sigma)
+end
+
+
 # The exponential covariance function
 struct GaussianCovariance{Tv}<:AbstractCovarianceFunction{Tv}
     length_scale::Tv
