@@ -25,7 +25,7 @@ struct ExplicitKLFactorization{Tv,Ti,Tm,Tc}<:AbstractKLFactorization{Tv}
 end 
 
 function ExplicitKLFactorization(in::ImplicitKLFactorization{Tv,Ti,Tm,Tc}) where {Tv,Ti,Tm,Tc}
-    return ExplicitKLFactorization{Tv,Ti,Tm,Tc}(in.P, in.supernodes.measurements, 𝒢, factorize(in.𝒢, in.supernodes))
+    return ExplicitKLFactorization{Tv,Ti,Tm,Tc}(in.P, in.supernodes.measurements, in.𝒢, factorize(in.𝒢, in.supernodes))
 end
 
 # Construct an implicit KL Factorization 

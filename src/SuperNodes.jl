@@ -13,11 +13,11 @@ function column_indices(node::IndexSuperNode) return node.column_indices end
 function row_indices(node::IndexSuperNode) return node.row_indices end
 
 function size(in::IndexSuperNode)
-    return (length(in.column_indices) , length(in.row_indices))
+    return (length(in.row_indices) , length(in.column_indices))
 end
 
 function size(in::IndexSuperNode, dim)
-    return (length(in.column_indices) , length(in.row_indices))[dim]
+    return (length(in.row_indices), length(in.column_indices))[dim]
 end
 
 

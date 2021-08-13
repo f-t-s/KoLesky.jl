@@ -1,7 +1,11 @@
 using KoLesky
 using Plots
+using Random
 
-x = rand(2, 100000) 
+Random.seed!(123)
+
+x = rand(2, 10) 
+
 
 # x[:, 1] .= x[:, 2]
 
@@ -34,10 +38,10 @@ P, ℓ, supernodes =  KoLesky.ordering_and_sparsity_pattern([rand(3, 10), rand(3
 # 
 # P, ℓ =  KoLesky.maximin_ordering(x, 3; init_distances)
 
-# measurements = KoLesky.point_measurements(x)
-# 
-# 𝒢 = KoLesky.ExponentialCovariance(0.1)
-# 
-# implicit_factor = KoLesky.ImplicitKLFactorization(𝒢, measurements, 3.0)
-# 
-# explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)
+measurements = KoLesky.point_measurements(x)
+
+𝒢 = KoLesky.MaternCovariance1_2(0.1)
+
+implicit_factor = KoLesky.ImplicitKLFactorization(𝒢, measurements, 3.0)
+
+explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)
