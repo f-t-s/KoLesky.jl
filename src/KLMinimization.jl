@@ -16,7 +16,7 @@ end
 # computes the upper triangular 
 import Base.Threads: nthreads, @threads
 function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::IndirectSupernodalAssignment{Ti,Tm}) where {Tv,Ti,Tm}
-    @show supernodal_assignment.measurements
+    # @show supernodal_assignment.measurements
     # Determines the maximum amount of space needed 
     maximum_buffer_L_size = maximum((maximum.(size.(supernodal_assignment.supernodes, 1))))^2
     maximum_buffer_U_size = maximum(maximum.(size.(supernodal_assignment.supernodes, 1) .* size.(supernodal_assignment.supernodes, 2)))
@@ -47,27 +47,43 @@ function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::
             local_buffer_m[ind] = supernodal_assignment.measurements[i]
         end
 
-        @show n_rows
-        @show n_columns
+        # @show n_rows
+        # @show n_columns
+
         # Set the values of U to be a truncated identity matrix
-        for (j, i) in enumerate((n_rows - n_columns + 1) : n_rows)
+        # For now, we are using U to determine which row of the local matrix corresponds to which column
+        for (j, index) in enumerate(column_indices(node))
+            i = length(U.colptr[index] : (U.colptr[index + 1] - 1))
             local_buffer_U[i, j] = 1
         end
+
+
         # Compute the local covariance Matrix 
         𝒢(local_buffer_L, local_buffer_m) 
         # Computing the Cholesky factorization
-        display(local_buffer_m)
-        display(local_buffer_L)
+        # display(local_buffer_m)
+        # display(local_buffer_L)
         chol = cholesky!(local_buffer_L)
         ldiv!(chol.U, local_buffer_U)
         # writing the results into the sparse matrix structure
         for (k, index) in enumerate(column_indices(node))
-            @show index
-            @show U.colptr[index]
-            @show U.colptr[index + 1] - 1
-            @show (n_rows - n_columns + k)
-            @show size(local_buffer_U)
-            U.nzval[U.colptr[index] : (U.colptr[index + 1] - 1)] .= local_buffer_U[1 : (n_rows - n_columns + k),  k]
+#             @show index
+#             @show U.colptr[index]
+#             @show U.colptr[index + 1] - 1
+#             @show (n_rows - n_columns + k)
+#             @show size(local_buffer_U)
+            range_of_nnzs = U.colptr[index] : (U.colptr[index + 1] - 1)
+            # TODO: Just for debugging, to be removed! 
+            # if index == 18
+            #     U.nzval[U.colptr[index] : (U.colptr[index + 1] - 1)] .= local_buffer_U[1 : (n_rows - n_columns + k),  k]
+            # else
+            #     U.nzval[U.colptr[index] : (U.colptr[index + 1] - 1)] .= local_buffer_U[1 : (n_rows - n_columns + k),  k]
+            # end
+            U.nzval[range_of_nnzs] .= local_buffer_U[1 : length(range_of_nnzs),  k]
+            # @show node.row_indices[length(range_of_nnzs)]
+            # @show index
+            # @show U.rowval[range_of_nnzs[end]]
+            @assert node.row_indices[length(range_of_nnzs)] == index == U.rowval[range_of_nnzs[end]]
         end
     end
     return U

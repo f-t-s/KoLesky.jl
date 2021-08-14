@@ -8,6 +8,7 @@ struct ImplicitKLFactorization{Tv,Ti,Tm,Tc<:AbstractCovarianceFunction{Tv}}<:Abs
     # Ordering
     P::Vector{Ti}
     # Skeletons that describe the sparsity pattern
+    # The measurements used by the Supernodal assignment are ordered # according to P
     supernodes::IndirectSupernodalAssignment{Ti,Tm}
     # A covariance function
     𝒢::Tc
@@ -17,6 +18,7 @@ struct ExplicitKLFactorization{Tv,Ti,Tm,Tc}<:AbstractKLFactorization{Tv}
     # Ordering 
     P::Vector{Ti}
     # A list of the measurements that can be used to compute covariances with new data points
+    # The measurements are already ordered according to P
     measurements::Vector{Tm}
     # A covariance function
     𝒢::Tc
@@ -34,7 +36,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     x = reduce(hcat, collect.(get_coordinate.(measurements)))
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
-    measurements = collect(measurements)
+    measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
@@ -44,7 +46,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     x = reduce(hcat, collect.(get_coordinate.(measurements)))
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
     Ti = eltype(P)
-    measurements = collect(measurements)
+    measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
@@ -55,7 +57,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
-    measurements = collect(measurements)
+    measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
@@ -67,7 +69,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
     Ti = eltype(P)
     # obtain measurements by concatenation
-    measurements = reduce(vcat, collect.(measurements))
+    measurements = reduce(vcat, collect.(measurements))[P]
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
 end
@@ -78,7 +80,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     x = reduce(hcat, collect.(get_coordinate.(measurements)))
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
-    measurements = collect(measurements)
+    measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
     return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
@@ -88,7 +90,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     x = reduce(hcat, collect.(get_coordinate.(measurements)))
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
     Ti = eltype(P)
-    measurements = collect(measurements)
+    measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
     return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
@@ -99,7 +101,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
-    measurements = collect(measurements)
+    measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
     return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
@@ -111,11 +113,19 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
     Ti = eltype(P)
     # obtain measurements by concatenation
-    measurements = reduce(vcat, collect.(measurements))
+    measurements = reduce(vcat, collect.(measurements))[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
     return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
 
+# Assembling the approximate kernel matrix implied by a factorization
+function assemble_covariance(factor::ExplicitKLFactorization)
+    inv_U_matrix = inv(Matrix(factor.U))
+    inv_P = similar(factor.P)
+    inv_P[factor.P] = 1 : length(inv_P)
+
+    return (inv_U_matrix' * inv_U_matrix)[inv_P, inv_P]
+end 
 
 
 # The dense, exact Cholesky factorization. Only for debugging purposes.
