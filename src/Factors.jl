@@ -57,7 +57,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
-    measurements = collect(measurements)[P]
+    measurements = reduce(vcat, collect.(measurements))[P]
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
