@@ -44,7 +44,7 @@ measurements = KoLesky.point_measurements(x)
 
 𝒢 = KoLesky.MaternCovariance1_2(0.1)
 
-implicit_factor = KoLesky.ImplicitKLFactorization(𝒢, measurements, 12.0)
+implicit_factor = KoLesky.ImplicitKLFactorization(𝒢, measurements, 12.0,4)
 
 @time explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)
 
