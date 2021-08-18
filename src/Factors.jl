@@ -82,7 +82,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     Ti = eltype(P)
     measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
+    return ExplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
 
 # using k-maximin and a single set of measurments
@@ -92,7 +92,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     Ti = eltype(P)
     measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
+    return ExplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
 
 # using 1-maximin and multiple set of measurments
@@ -103,7 +103,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     Ti = eltype(P)
     measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
+    return ExplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
 
 # using k-maximin and multiple set of measurments
@@ -115,7 +115,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     # obtain measurements by concatenation
     measurements = reduce(vcat, collect.(measurements))[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
+    return ExplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
 
 # Assembling the approximate kernel matrix implied by a factorization
