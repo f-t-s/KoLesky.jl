@@ -71,7 +71,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     # obtain measurements by concatenation
     measurements = reduce(vcat, collect.(measurements))[P]
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
-    return ImplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, supernodes, 𝒢)
+    return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
 
 # Construct an implicit KL Factorization 
