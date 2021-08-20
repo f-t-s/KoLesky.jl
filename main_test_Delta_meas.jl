@@ -16,7 +16,7 @@ measurements[2] = meas_δ
 
 lengthscale = 0.2
 cov = KoLesky.MaternCovariance7_2(lengthscale)
-k_neighbors = 4
+k_neighbors = 3
 ρ = 12.0
 implicit_factor = KoLesky.ImplicitKLFactorization(cov, measurements, ρ, k_neighbors)
 @time explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)
