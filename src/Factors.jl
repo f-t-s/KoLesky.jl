@@ -26,8 +26,8 @@ struct ExplicitKLFactorization{Tv,Ti,Tm,Tc}<:AbstractKLFactorization{Tv}
     U::SparseMatrixCSC{Tv,Ti}
 end 
 
-function ExplicitKLFactorization(in::ImplicitKLFactorization{Tv,Ti,Tm,Tc}) where {Tv,Ti,Tm,Tc}
-    return ExplicitKLFactorization{Tv,Ti,Tm,Tc}(in.P, in.supernodes.measurements, in.𝒢, factorize(in.𝒢, in.supernodes))
+function ExplicitKLFactorization(in::ImplicitKLFactorization{Tv,Ti,Tm,Tc}; nugget = 0.0) where {Tv,Ti,Tm,Tc}
+    return ExplicitKLFactorization{Tv,Ti,Tm,Tc}(in.P, in.supernodes.measurements, in.𝒢, factorize(in.𝒢, in.supernodes; nugget = nugget))
 end
 
 # Construct an implicit KL Factorization 
@@ -76,38 +76,38 @@ end
 
 # Construct an implicit KL Factorization 
 # using 1-maximin and a single set of measurments
-function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
+function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ; lambda=1.5, alpha=1.0, Tree=KDTree, nugget = 0.0) where Tv
     x = reduce(hcat, collect.(get_coordinate.(measurements)))
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
     measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
+    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes; nugget = nugget))
 end
 
 # using k-maximin and a single set of measurments
-function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
+function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree, nugget = 0.0) where Tv
     x = reduce(hcat, collect.(get_coordinate.(measurements)))
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
     Ti = eltype(P)
     measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
+    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes; nugget = nugget))
 end
 
 # using 1-maximin and multiple set of measurments
-function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
+function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ; lambda=1.5, alpha=1.0, Tree=KDTree, nugget = 0.0) where Tv
     # x is now a vector of matrices
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
     measurements = collect(measurements)[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
+    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes; nugget = nugget))
 end
 
 # using k-maximin and multiple set of measurments
-function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
+function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree, nugget = 0.0) where Tv
     # x is now a vector of matrices
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
@@ -115,7 +115,7 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     # obtain measurements by concatenation
     measurements = reduce(vcat, collect.(measurements))[P]
     supernodes = IndirectSupernodalAssignment{Ti}(supernodes, measurements)
-    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
+    return ExplicitKLFactorization{Tv,Ti,Tm,typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes; nugget = nugget))
 end
 
 # Assembling the approximate kernel matrix implied by a factorization

@@ -1,6 +1,7 @@
 import SparseArrays: sparse, istriu
 import Base.Threads: @threads, threadid, nthreads
 import LinearAlgebra: ldiv!, cholesky!
+using LinearAlgebra: I as LinearAlgebraI
 function _create_U_indices(supernodes::AbstractVector{<:IndexSuperNode{Ti}}) where Ti
     I = Ti[]
     J = Ti[]
@@ -15,7 +16,7 @@ end
 
 # computes the upper triangular 
 import Base.Threads: nthreads, @threads
-function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::IndirectSupernodalAssignment{Ti,Tm}) where {Tv,Ti,Tm}
+function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::IndirectSupernodalAssignment{Ti,Tm}; nugget = 0.0) where {Tv,Ti,Tm}
     # Determines the maximum amount of space needed 
     maximum_buffer_L_size = maximum((maximum.(size.(supernodal_assignment.supernodes, 1))))^2
     maximum_buffer_U_size = maximum(maximum.(size.(supernodal_assignment.supernodes, 1) .* size.(supernodal_assignment.supernodes, 2)))
@@ -57,7 +58,7 @@ function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::
         # Compute the local covariance Matrix 
         𝒢(local_buffer_L, local_buffer_m) 
         # Computing the Cholesky factorization
-        chol = cholesky!(local_buffer_L)
+        chol = cholesky!(local_buffer_L+nugget*Matrix(LinearAlgebraI,size(local_buffer_L)...))
         ldiv!(chol.U, local_buffer_U)
         # writing the results into the sparse matrix structure
         for (k, index) in enumerate(column_indices(node))
