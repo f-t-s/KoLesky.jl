@@ -262,6 +262,14 @@ function supernodal_reverse_maximin_sparsity_pattern(x::AbstractMatrix, P, ℓ, 
                 # possibly use second parameter here or make dependent on α
                 new_row_indices = inrange(children_tree, x[:, column_index], ρ * ℓ[column_index])
                 new_row_indices = new_row_indices[findall(new_row_indices .<= column_index)]
+                # kind of clumsy way to remove points from previous 
+                # levels that are of smaller length scale
+                ####################################
+                # using distance of Tree function to compute distance of each new row index to the column index
+                row_dists = nn(Tree(x[:, column_index:column_index]), x[:, new_row_indices])[2]
+                # prune the list of row indices to those that are within distance criterion of the row index length scale, as well
+                new_row_indices = new_row_indices[findall(row_dists .<= ρ * ℓ[new_row_indices])]
+                ####################################
                 append!(row_indices, new_row_indices)
             end
             sort!(row_indices)
