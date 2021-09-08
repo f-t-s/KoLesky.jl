@@ -67,6 +67,7 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     # x is now a vector of matrices
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
+    # @show ℓ
     Ti = eltype(P)
     # obtain measurements by concatenation
     measurements = reduce(vcat, collect.(measurements))[P]
