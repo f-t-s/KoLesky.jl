@@ -58,7 +58,8 @@ function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::
         # Compute the local covariance Matrix 
         𝒢(local_buffer_L, local_buffer_m) 
         # Computing the Cholesky factorization
-        chol = cholesky!(local_buffer_L+nugget*Matrix(LinearAlgebraI,size(local_buffer_L)...))
+        # chol = cholesky!(local_buffer_L+nugget*Matrix(LinearAlgebraI,size(local_buffer_L)...))
+        chol = cholesky!(local_buffer_L+nugget*diagm(diag(local_buffer_L)))
         ldiv!(chol.U, local_buffer_U)
         # writing the results into the sparse matrix structure
         for (k, index) in enumerate(column_indices(node))
