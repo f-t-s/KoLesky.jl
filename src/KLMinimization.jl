@@ -1,6 +1,6 @@
 import SparseArrays: sparse, istriu
 import Base.Threads: @threads, threadid, nthreads
-import LinearAlgebra: ldiv!, cholesky!
+import LinearAlgebra: ldiv!, cholesky!, diag
 using LinearAlgebra: I as LinearAlgebraI
 function _create_U_indices(supernodes::AbstractVector{<:IndexSuperNode{Ti}}) where Ti
     I = Ti[]
