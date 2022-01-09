@@ -83,8 +83,8 @@ function ImplicitKLFactorization_FollowDiracs(𝒢::AbstractCovarianceFunction{T
     @assert lm >= 3
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : 2]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
-    @show P
-    @show supernodes
+    # @show P
+    # @show supernodes
     Ti = eltype(P)
     # obtain measurements by concatenation
     N_boundary = length(measurements[1])
@@ -105,6 +105,7 @@ function ImplicitKLFactorization_FollowDiracs(𝒢::AbstractCovarianceFunction{T
                 append!(node.row_indices,(rowi-N_boundary-1)*(lm-1)+N_boundary+2:(rowi-N_boundary)*(lm-1)+N_boundary)
             end
         end
+        sort!(node.row_indices)
         for j in 1:n
             columni = node.column_indices[j]
             if columni > N_boundary
@@ -112,6 +113,7 @@ function ImplicitKLFactorization_FollowDiracs(𝒢::AbstractCovarianceFunction{T
                 append!(node.column_indices,(columni-N_boundary-1)*(lm-1)+N_boundary+2:(columni-N_boundary)*(lm-1)+N_boundary)
             end
         end
+        sort!(node.column_indices)
     end
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P_all, supernodes, 𝒢)
