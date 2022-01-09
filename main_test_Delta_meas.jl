@@ -2,7 +2,7 @@ using KoLesky
 import StaticArrays.SVector
 using LinearAlgebra
 
-N = 1000
+N = 10
 d = 2
 x = rand(d, N)
 Δδ_coefs = -1.0
@@ -14,23 +14,31 @@ measurements = Vector{Vector{<:KoLesky.AbstractPointMeasurement}}(undef,2)
 measurements[1] = meas_Δδ
 measurements[2] = meas_δ
 
-lengthscale = 0.2
-cov = KoLesky.MaternCovariance7_2(lengthscale)
-k_neighbors = 3
-ρ = 12.0
-implicit_factor = KoLesky.ImplicitKLFactorization(cov, measurements, ρ, k_neighbors)
-@time explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)
-U = explicit_factor.U
-P = explicit_factor.P
-U_inv = inv(Matrix(U))
-Theta_FC = U_inv'*U_inv
+x = [reduce(hcat, collect.(KoLesky.get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
+ρ = 3.0
+P, ℓ, supernodes = KoLesky.ordering_and_sparsity_pattern(x, ρ)
+# print(collect.(KoLesky.get_coordinate.(meas_δ)))
 
-Theta = zeros(2*N,2*N)
-cov(view(Theta,1:N,1:N),meas_Δδ)
-cov(view(Theta,1:N, N+1:2*N),meas_Δδ,meas_δ)
-view(Theta,N+1:2*N, 1:N)[:,:] = Theta[1:N, N+1:2*N]'
-cov(view(Theta,N+1:2*N,N+1:2*N),meas_δ)
+print(reduce(vcat, collect.(measurements)))
 
-@show norm(Theta[P,P]-Theta_FC)/norm(Theta[P,P])
-@show norm(Theta[P[1:N],P[1:N]]-Theta_FC[1:N,1:N])/norm(Theta[P[1:N],P[1:N]])
-@show norm(Theta[P[N+1:2*N],P[N+1:2*N]]-Theta_FC[N+1:2*N,N+1:2*N])/norm(Theta[P[N+1:2*N],P[N+1:2*N]]);
+
+# lengthscale = 0.2
+# cov = KoLesky.MaternCovariance7_2(lengthscale)
+# k_neighbors = 3
+# ρ = 12.0
+# implicit_factor = KoLesky.ImplicitKLFactorization(cov, measurements, ρ, k_neighbors)
+# @time explicit_factor = KoLesky.ExplicitKLFactorization(implicit_factor)
+# U = explicit_factor.U
+# P = explicit_factor.P
+# U_inv = inv(Matrix(U))
+# Theta_FC = U_inv'*U_inv
+
+# Theta = zeros(2*N,2*N)
+# cov(view(Theta,1:N,1:N),meas_Δδ)
+# cov(view(Theta,1:N, N+1:2*N),meas_Δδ,meas_δ)
+# view(Theta,N+1:2*N, 1:N)[:,:] = Theta[1:N, N+1:2*N]'
+# cov(view(Theta,N+1:2*N,N+1:2*N),meas_δ)
+
+# @show norm(Theta[P,P]-Theta_FC)/norm(Theta[P,P])
+# @show norm(Theta[P[1:N],P[1:N]]-Theta_FC[1:N,1:N])/norm(Theta[P[1:N],P[1:N]])
+# @show norm(Theta[P[N+1:2*N],P[N+1:2*N]]-Theta_FC[N+1:2*N,N+1:2*N])/norm(Theta[P[N+1:2*N],P[N+1:2*N]]);
