@@ -33,10 +33,11 @@ end
 # Construct an implicit KL Factorization 
 # using 1-maximin and a single set of measurments
 function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
-    x = reduce(hcat, collect.(get_coordinate.(measurements)))
+    x = reduce(hcat, collect.(get_coordinate.(measurements))) 
+    # get_coordinate gets the sparse array format, then collect gets the standard array format
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ; lambda, alpha, Tree)
     Ti = eltype(P)
-    measurements = collect(measurements)[P]
+    measurements = collect(measurements)[P]  # seems extra?
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
@@ -73,6 +74,47 @@ function ImplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     measurements = reduce(vcat, collect.(measurements))[P]
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
+end
+
+# using k-maximin and multiple set of measurments: specific to the case that ordering of derivative measurements follows that of diracs
+function ImplicitKLFactorization_FollowDiracs(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
+    # measurments[1] is Diracs on the boundary, measurements[2] Diracs on the interior
+    lm = length(measurements)
+    @assert lm >= 3
+    x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : 2]
+    P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
+    @show P
+    @show supernodes
+    Ti = eltype(P)
+    # obtain measurements by concatenation
+    N_boundary = length(measurements[1])
+    N_domain = length(measurements[2])
+    P_all = [0 for _ in 1:(lm-1)*N_domain+N_boundary]
+    P_all[1:N_boundary] = P[1:N_boundary]
+    P_all[N_boundary+1:end] = reduce(vcat, [x.+ collect(0:lm-2)*N_domain for x in P[N_boundary+1:end]])
+    measurements = reduce(vcat, collect.(measurements))[P_all]
+
+    # construct supernodes
+    for node in supernodes
+        m = length(node.row_indices)
+        n = length(node.column_indices)
+        for i in 1:m
+            rowi = node.row_indices[i]
+            if rowi > N_boundary
+                node.row_indices[i] = (rowi-N_boundary-1)*(lm-1) + N_boundary + 1
+                append!(node.row_indices,(rowi-N_boundary-1)*(lm-1)+N_boundary+2:(rowi-N_boundary)*(lm-1)+N_boundary)
+            end
+        end
+        for j in 1:n
+            columni = node.column_indices[j]
+            if columni > N_boundary
+                node.column_indices[j] = (columni-N_boundary-1)*(lm-1) + N_boundary + 1
+                append!(node.column_indices,(columni-N_boundary-1)*(lm-1)+N_boundary+2:(columni-N_boundary)*(lm-1)+N_boundary)
+            end
+        end
+    end
+    supernodes = IndirectSupernodalAssignment(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P_all, supernodes, 𝒢)
 end
 
 # Construct an implicit KL Factorization 
