@@ -291,3 +291,4 @@ end
 function (cov::AbstractCovarianceFunction)(x::PointMeasurement, y::Δ∇δPointMeasurement)
     return (cov::AbstractCovarianceFunction)(y,x)
 end
+
