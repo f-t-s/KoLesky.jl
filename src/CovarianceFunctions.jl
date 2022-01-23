@@ -68,7 +68,7 @@ function (cov::MaternCovariance5_2)(x::ΔδPointMeasurement, y::ΔδPointMeasure
     D4F(t,a) = 25*(d*(d+2)*a^2-(3+2*d)*sqrt(5)*a*t+5*t^2)/(3*a^6) * exp(-sqrt(5)*t/a);
     dist = norm(x.coordinate - y.coordinate);
     sigma = cov.length_scale;
-    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*DF(t,a)
+    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*DF(dist,sigma)
     # return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*(1+dist/sigma+dist^2/(3*sigma^2))* exp(-dist/sigma)
 end
 
