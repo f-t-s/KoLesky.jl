@@ -45,13 +45,11 @@ end
 
 # Matern covariance function
 function (cov::MaternCovariance5_2)(x::PointMeasurement, y::PointMeasurement)
-    # d = length(x.coordinate)
     dist = norm(x.coordinate - y.coordinate);
     sigma = cov.length_scale;
-    DF(t,a) = (1 + sqrt(5)*t/a + 5*t^2/(3*a^2))*exp(-sqrt(5)*t/a)
-    return DF(dist,sigma)
+    # return (1+sqrt(5)*dist/sigma + 5*dist^2/(3*sigma^2)) * exp(-sqrt(5)*dist/sigma)
 
-    # return (1+dist/sigma+dist^2/(3*sigma^2))* exp(-dist/sigma)
+    return (1+dist/sigma+dist^2/(3*sigma^2))* exp(-dist/sigma)
 end
 
 function (cov::MaternCovariance5_2)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
@@ -61,15 +59,14 @@ function (cov::MaternCovariance5_2)(x::ΔδPointMeasurement, y::ΔδPointMeasure
     w1_y = y.weight_Δ;
     w2_y = y.weight_δ;
 
-    # D2F(t,a) = (t^2-2*a*(t+a))/(3*a^4)*exp(-t/a)
-    # D4F(t,a) = (8*a^2+t^2-7*t*a)/(3*a^6)*exp(-t/a)
-    DF(t,a) = (1 + sqrt(5)*t/a + 5*t^2/(3*a^2))*exp(-sqrt(5)*t/a)
-    D2F(t,a) = -5*(d*a^2+sqrt(5)*d*a*t-5*t^2)/(3*a^4) * exp(-sqrt(5)*t/a);
-    D4F(t,a) = 25*(d*(d+2)*a^2-(3+2*d)*sqrt(5)*a*t+5*t^2)/(3*a^6) * exp(-sqrt(5)*t/a);
+    D2F(t,a) = (t^2-2*a*(t+a))/(3*a^4)*exp(-t/a)
+    D4F(t,a) = (8*a^2+t^2-7*t*a)/(3*a^6)*exp(-t/a)
+    # D2F(t,a) = -(2*a^2+2*sqrt(5)*a*t-5*t^2)/(3*a^4) * exp(-sqrt(5)*t/a);
+    # D4F(t,a) = 25*(8*a^2-7*sqrt(5)*a*t+5*t^2)/(3*a^6) * exp(-sqrt(5)*t/a);
     dist = norm(x.coordinate - y.coordinate);
     sigma = cov.length_scale;
-    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*DF(t,a)
-    # return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*(1+dist/sigma+dist^2/(3*sigma^2))* exp(-dist/sigma)
+    # return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*(1+sqrt(5)*dist/sigma + 5*dist^2/(3*sigma^2)) * exp(-sqrt(5)*dist/sigma)
+    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*(1+dist/sigma+dist^2/(3*sigma^2))* exp(-dist/sigma)
 end
 
 struct MaternCovariance7_2{Tv}<:AbstractCovarianceFunction{Tv}
