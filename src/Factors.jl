@@ -83,9 +83,13 @@ function ImplicitKLFactorization_FollowDiracs(𝒢::AbstractCovarianceFunction{T
     @assert lm >= 3
     x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : 2]
     P, ℓ, supernodes = ordering_and_sparsity_pattern(x, ρ, k_neighbors; lambda, alpha, Tree)
-    # @show P
-    # @show supernodes
     Ti = eltype(P)
+
+    # for the Diracs part
+    measurements_diracs = reduce(vcat, collect.(measurements[1:2]))[P]
+    supernodes_diracs = IndirectSupernodalAssignment(copy(supernodes), measurements_diracs)
+    ImplicitFactor_diracs = ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes_diracs, 𝒢)
+
     # obtain measurements by concatenation
     N_boundary = length(measurements[1])
     N_domain = length(measurements[2])
@@ -93,6 +97,8 @@ function ImplicitKLFactorization_FollowDiracs(𝒢::AbstractCovarianceFunction{T
     P_all[1:N_boundary] = P[1:N_boundary]
     P_all[N_boundary+1:end] = reduce(vcat, [x.+ collect(0:lm-2)*N_domain for x in P[N_boundary+1:end]])
     measurements = reduce(vcat, collect.(measurements))[P_all]
+
+    
 
     # construct supernodes
     for node in supernodes
@@ -116,7 +122,7 @@ function ImplicitKLFactorization_FollowDiracs(𝒢::AbstractCovarianceFunction{T
         sort!(node.column_indices)
     end
     supernodes = IndirectSupernodalAssignment(supernodes, measurements)
-    return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P_all, supernodes, 𝒢)
+    return ImplicitFactor_diracs, ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P_all, supernodes, 𝒢)
 end
 
 # Construct an implicit KL Factorization 
