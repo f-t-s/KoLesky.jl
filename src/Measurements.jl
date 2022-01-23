@@ -17,6 +17,17 @@ struct ΔδPointMeasurement{Tv,d}<:AbstractPointMeasurement{d}
     weight_δ::Tv
 end
 
+struct Δ∇δPointMeasurement{Tv,d}<:AbstractPointMeasurement{d} 
+    coordinate::SVector{d,Float64}
+    weight_Δ::Tv
+    weight_∇::SVector{d,Float64}
+    weight_δ::Tv
+end
+
+function Δ∇δPointMeasurement(in::PointMeasurement{d}) where d
+    return Δ∇δPointMeasurement{Float64,d}(in.coordinate, zero(Float64), zeros(Float64), one(Float64))
+end
+
 function ΔδPointMeasurement(in::PointMeasurement{d}) where d
     return ΔδPointMeasurement{Float64,d}(in.coordinate, zero(Float64), one(Float64))
 end
