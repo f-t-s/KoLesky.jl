@@ -33,7 +33,7 @@ function factorize(𝒢::AbstractCovarianceFunction{Tv}, supernodal_assignment::
     # Check that matrix is really upper triangular
     @assert istriu(U)
 
-    print("[multithreading] using %d threads\n",Threads.nthreads())
+    println("[multithreading] using ", Threads.nthreads(), " threads")
     @threads for node in supernodal_assignment.supernodes
     # for node in supernodal_assignment.supernodes
         # extracting the thread's buffers
