@@ -25,7 +25,7 @@ struct Δ∇δPointMeasurement{Tv,d}<:AbstractPointMeasurement{d}
 end
 
 function Δ∇δPointMeasurement(in::PointMeasurement{d}) where d
-    return Δ∇δPointMeasurement{Float64,d}(in.coordinate, zero(Float64), zeros(Float64), one(Float64))
+    return Δ∇δPointMeasurement{Float64,d}(in.coordinate, zero(Float64), SVector{d,Float64}(zeros(Float64,d)), one(Float64))
 end
 
 function ΔδPointMeasurement(in::PointMeasurement{d}) where d
