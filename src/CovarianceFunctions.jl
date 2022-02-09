@@ -292,38 +292,41 @@ function (cov::AbstractCovarianceFunction)(x::PointMeasurement, y::Δ∇δPointM
     return (cov::AbstractCovarianceFunction)(y,x)
 end
 
-struct InverseQuadratic{Tv}<:AbstractCovarianceFunction{Tv}
-    length_scale::Tv
-end
-function (cov::InverseQuadratic)(x::SVector{d,T}, y::SVector{d,T}) where {d,T}
-    dist = norm(x-y)
-    sigma = cov.length_scale
-    return 1/(dist^2/(2*sigma^2)+1)
-end
+# struct InverseQuadratic{Tv}<:AbstractCovarianceFunction{Tv}
+#     length_scale::Tv
+# end
+# function (cov::InverseQuadratic)(x::SVector{d,T}, y::SVector{d,T}) where {d,T}
+#     dist = norm(x-y)
+#     sigma = cov.length_scale
+#     return 1/(dist^2/(2*sigma^2)+1)
+# end
+# anonymous functions
+# forward differentiation is much faster than reverse: for low dimensional input especially
+# use ForwardDiff for input dim < 30 even with output dim = 1
 
-function (cov::AbstractCovarianceFunction)(x::PointMeasurement, y::PointMeasurement)
-    return cov(x.coordinate, y.coordinate)
-end
+# function (cov::AbstractCovarianceFunction)(x::PointMeasurement, y::PointMeasurement)
+#     return cov(x.coordinate, y.coordinate)
+# end
 
 # incomplete
-function Δx_cov(x::SVector{d,T}, y::SVector{d,T}) where {d,T}
-    return 
-end 
-function (cov::AbstractCovarianceFunction)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
-    d = length(x.coordinate);
-    w1_x = x.weight_Δ;
-    w2_x = x.weight_δ;
-    w1_y = y.weight_Δ;
-    w2_y = y.weight_δ;
+# function Δx_cov(x::SVector{d,T}, y::SVector{d,T}) where {d,T}
+#     return 
+# end 
+# function (cov::AbstractCovarianceFunction)(x::ΔδPointMeasurement, y::ΔδPointMeasurement)
+#     d = length(x.coordinate);
+#     w1_x = x.weight_Δ;
+#     w2_x = x.weight_δ;
+#     w1_y = y.weight_Δ;
+#     w2_y = y.weight_δ;
 
-    xc = x.coordinate
-    yc = y.coordinate
+#     xc = x.coordinate
+#     yc = y.coordinate
     
 
-    F(t,a) = 1/(t^2/(2*a^2)+1)
-    D2F(t,a) = (t^2 - a^2*d)/(a^4)*exp(-t^2/(2*a^2));
-    D4F(t,a) = (a^4*d*(2+d)-2*a^2*(2+d)*t^2+t^4)*exp(-t^2/(2*a^2))/a^8
-    dist = norm(x.coordinate - y.coordinate);
-    sigma = cov.length_scale;
-    return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*F(dist,sigma)
-end
+#     F(t,a) = 1/(t^2/(2*a^2)+1)
+#     D2F(t,a) = (t^2 - a^2*d)/(a^4)*exp(-t^2/(2*a^2));
+#     D4F(t,a) = (a^4*d*(2+d)-2*a^2*(2+d)*t^2+t^4)*exp(-t^2/(2*a^2))/a^8
+#     dist = norm(x.coordinate - y.coordinate);
+#     sigma = cov.length_scale;
+#     return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*F(dist,sigma)
+# end
