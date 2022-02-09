@@ -80,7 +80,7 @@ function (cov::MaternCovariance5_2)(x::Δ∇δPointMeasurement, y::Δ∇δPointM
     D2F(t,a) = -5*(d*a^2+sqrt(5)*d*a*t-5*t^2)/(3*a^4) * exp(-sqrt(5)*t/a)
     D4F(t,a) = 25*(d*(d+2)*a^2-(3+2*d)*sqrt(5)*a*t+5*t^2)/(3*a^6) * exp(-sqrt(5)*t/a)
     DF(t,a) = -5*(a+sqrt(5)*t)*exp(-sqrt(5)*t/a)/(3*a^3)
-    DF3(t,a) = 25*exp(-sqrt(5)*t/a)*(a*(2+d)-sqrt(5)*t)/(3*a^5)
+    D3F(t,a) = 25*exp(-sqrt(5)*t/a)*(a*(2+d)-sqrt(5)*t)/(3*a^5)
     DDF(t,a) = 25*exp(-sqrt(5)*t/a)/(3*a^4)
     vec = x.coordinate - y.coordinate
     dist = norm(vec);
@@ -127,7 +127,7 @@ function (cov::MaternCovariance7_2)(x::Δ∇δPointMeasurement, y::Δ∇δPointM
     D2F(t,a) = -7*(3*d*a^3+3*sqrt(7)*a^2*d*t+7*a*(d-1)*t^2-7*sqrt(7)*t^3)/(15*a^5)*exp(-sqrt(7)*t/a);
     D4F(t,a) = 49*(d*(d+2)*a^3+d*(d+2)*sqrt(7)*a^2*t-14*a*(2+d)*t^2+7*sqrt(7)*t^3)/(15*a^7)*exp(-sqrt(7)*t/a);
     DF(t,a) = -7*(3*a^2+3*sqrt(7)*a*t+7*t^2)*exp(-sqrt(7)*t/a)/(15*a^4)
-    DF3(t,a) = 49*exp(-sqrt(7)*t/a)*(a^2*(2+d)+sqrt(7)*a*(2+d)*t-7*t^2)/(15*a^6)
+    D3F(t,a) = 49*exp(-sqrt(7)*t/a)*(a^2*(2+d)+sqrt(7)*a*(2+d)*t-7*t^2)/(15*a^6)
     DDF(t,a) = 49*exp(-sqrt(7)*t/a)*(a+sqrt(7)*t)/(15*a^5)
     vec = x.coordinate - y.coordinate
     dist = norm(vec);
@@ -174,7 +174,7 @@ function (cov::MaternCovariance9_2)(x::Δ∇δPointMeasurement, y::Δ∇δPointM
     D2F(t,a) = -9*(5*d*a^4+15*d*a^3*t+9*a^2*(2*d-1)*t^2+9*a*(d-3)*t^3-27*t^4)/(35*a^6)*exp(-3*t/a);
     D4F(t,a) = 81*(d*(d+2)*a^4+3*a^3*d*(d+2)*t+3*a^2*(d^2-4)-18*a*(d+2)*t^3+27*t^4)/(35*a^8)*exp(-3*t/a);
     DF(t,a) = -9*(5*a^3+15*a^2*t+18*a*t^2+9*t^3)*exp(-3*t/a)/(35*a^5)
-    DF3(t,a) = 81*exp(-3*t/a)*(a^3*(2+d)+3*a^2*(2+d)*t+3*a*(1+d)*t^2-9*t^3)/(35*a^7)
+    D3F(t,a) = 81*exp(-3*t/a)*(a^3*(2+d)+3*a^2*(2+d)*t+3*a*(1+d)*t^2-9*t^3)/(35*a^7)
     DDF(t,a) = 81*exp(-3*t/a)*(a^2+3*a*t+3*t^2)/(35*a^6)
     vec = x.coordinate - y.coordinate
     dist = norm(vec);
@@ -221,7 +221,7 @@ function (cov::MaternCovariance11_2)(x::Δ∇δPointMeasurement, y::Δ∇δPoint
     D2F(t,a) = -11*(105*d*a^5+105*d*sqrt(11)*a^4*t+165*(3*d-1)*a^3*t^2+55*sqrt(11)*(2*d-3)*a^2*t^3+121*(d-6)*a*t^4-121*sqrt(11)*t^5)/(945*a^7)*exp(-sqrt(11)*t/a);
     D4F(t,a) = 121*(15*d*(2+d)*a^5+15*d*(2+d)*sqrt(11)*a^4*t+66*(d^2+d-2)*a^3*t^2+11*sqrt(11)*a^2*(d^2-4*d-12)*t^3-121*(3+2*d)*a*t^4+121*sqrt(11)*t^5)/(945*a^9)*exp(-sqrt(11)*t/a);
     DF(t,a) = -11*(105*a^4+105*sqrt(11)*a^3*t+495*a^2*t^2+110*sqrt(11)*a*t^3+121*t^4)*exp(-sqrt(11)*t/a)/(945*a^6)
-    DF3(t,a) = 121*exp(-sqrt(11)*t/a)*(15*a^4*(2+d)+15*sqrt(11)*a^3*(2+d)*t+33*a^2*(3+2*d)*t^2+11*sqrt*(11)*a*(d-1)*t^3-121*t^4)/(945*a^8)
+    D3F(t,a) = 121*exp(-sqrt(11)*t/a)*(15*a^4*(2+d)+15*sqrt(11)*a^3*(2+d)*t+33*a^2*(3+2*d)*t^2+11*sqrt*(11)*a*(d-1)*t^3-121*t^4)/(945*a^8)
     DDF(t,a) = 121*exp(-sqrt(11)*t/a)*(15*a^3+15*sqrt(11)*a^2*t+66*a*t^2+11*sqrt(11)*t^3)/(945*a^7)
     vec = x.coordinate - y.coordinate
     dist = norm(vec);
@@ -267,7 +267,7 @@ function (cov::GaussianCovariance)(x::Δ∇δPointMeasurement, y::Δ∇δPointMe
     D2F(t,a) = (t^2 - a^2*d)/(a^4)*exp(-t^2/(2*a^2));
     D4F(t,a) = (a^4*d*(2+d)-2*a^2*(2+d)*t^2+t^4)*exp(-t^2/(2*a^2))/a^8
     DF(t,a) = -exp(-t^2/(2*a^2))/a^2
-    DF3(t,a) = exp(-t^2/(2*a^2))*(a^2*(2+d)*t-t^3)/a^6
+    D3F(t,a) = exp(-t^2/(2*a^2))*(a^2*(2+d)*t-t^3)/a^6
     DDF(t,a) = exp(-t^2/(2*a^2))/a^4
     vec = x.coordinate - y.coordinate
     dist = norm(vec);
