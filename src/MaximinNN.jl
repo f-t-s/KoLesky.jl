@@ -309,3 +309,23 @@ function ordering_and_sparsity_pattern(x::AbstractVector{<:AbstractMatrix}, ρ, 
     supernodes = supernodal_reverse_maximin_sparsity_pattern(reduce(hcat, x), P, ℓ, ρ; lambda, alpha, Tree)
     return P, ℓ, supernodes
 end 
+
+function ordering_and_sparsity_pattern_DiracsFirstThenUnifScale(x::AbstractVector{<:AbstractMatrix}, ρ, k_neighbors; init_distances=[fill(typemax(eltype(eltype(x))), (k_neighbors, size(xₖ, 2))) for xₖ in x], lambda=1.5, alpha=1.0, Tree=KDTree)
+    lm = length(x)
+    @assert lm >= 3
+    P, ℓ = maximin_ordering(x[1:2], k_neighbors; init_distances, Tree)
+
+    N_domain = size(x[2],2)
+    N_boundary = size(x[1],2)
+    
+
+    P_all = [0 for _ in 1:(lm-1)*N_domain+N_boundary]
+    P_all[1:N_boundary] = P[1:N_boundary]
+    P_all[N_boundary+1:end] = reduce(vcat, [P[N_boundary+1:N_boundary+N_domain].+(i-1)*N_domain for i in 1:lm-1])
+    ℓ_all = zeros((lm-1)*N_domain+N_boundary)
+    ℓ_all[1:N_boundary+N_domain] = ℓ
+    ℓ_all[N_boundary+N_domain+1:end] .= ℓ[end]
+
+    supernodes = supernodal_reverse_maximin_sparsity_pattern(reduce(hcat, x), P_all, ℓ_all, ρ; lambda, alpha, Tree)
+    return P_all, ℓ_all, supernodes
+end 

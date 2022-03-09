@@ -125,6 +125,20 @@ function ImplicitKLFactorization_FollowDiracs(𝒢::AbstractCovarianceFunction{T
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P_all, supernodes, 𝒢)
 end
 
+
+####
+function ImplicitKLFactorization_DiracsFirstThenUnifScale(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractVector{<:AbstractPointMeasurement}}, ρ, k_neighbors; lambda=1.5, alpha=1.0, Tree=KDTree) where Tv
+    # measurments[1] is Diracs on the boundary, measurements[2] Diracs on the interior
+    x = [reduce(hcat, collect.(get_coordinate.(measurements[k]))) for k = 1 : length(measurements)]
+    P, ℓ, supernodes = ordering_and_sparsity_pattern_DiracsFirstThenUnifScale(x, ρ, k_neighbors; lambda, alpha, Tree)
+
+    Ti = eltype(P)
+    # obtain measurements by concatenation
+    measurements = reduce(vcat, collect.(measurements))[P]
+    supernodes = IndirectSupernodalAssignment(supernodes, measurements)
+    return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
+end
+
 # Construct an implicit KL Factorization 
 # using 1-maximin and a single set of measurments
 function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ; lambda=1.5, alpha=1.0, Tree=KDTree, nugget = 0.0) where Tv
