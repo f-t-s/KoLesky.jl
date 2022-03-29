@@ -1,5 +1,7 @@
 import LinearAlgebra.norm
-import StaticArrays.SVector
+using StaticArrays
+# autoDiff 
+using ForwardDiff
 abstract type AbstractCovarianceFunction{Tv} end 
 
 # automatically implements a mutating batched version of a given covariance function 
@@ -88,6 +90,77 @@ function (cov::MaternCovariance5_2)(x::Δ∇δPointMeasurement, y::Δ∇δPointM
     return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*F(dist,sigma) - w1_x*D3F(dist,sigma)*sum(vec.*wg_y) + w1_y*D3F(dist,sigma)*sum(vec.*wg_x) - w2_x*DF(dist,sigma)*sum(vec.*wg_y) + w2_y*DF(dist,sigma)*sum(vec.*wg_x) + (sum(-wg_x.*wg_y)*DF(dist,sigma)+sum(wg_x.*vec)*sum(-wg_y.*vec)*DDF(dist,sigma))
 end
 
+# dim = 2
+function (cov::MaternCovariance5_2)(x::∂∂PointMeasurement, y::∂∂PointMeasurement)
+    function F(x,y,a)
+        eps = 1e-8
+        t = sqrt((x[1]-y[1])^2+(x[2]-y[2])^2+eps)
+        return (1 + sqrt(5)*t/a + 5*t^2/(3*a^2))*exp(-sqrt(5)*t/a)
+    end
+    
+    function Hx_F(x,y,a)
+        hessian = ForwardDiff.hessian(x -> F(x,y,a),x)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    function HxHy_F(x,y,a)
+        hessian =  ForwardDiff.jacobian(y -> ForwardDiff.jacobian(y -> Hx_F(x,y,a),y),y)
+        return hessian[SVector{9,Int64}(1,2,3,4,5,6,10,11,12)]
+    end
+    
+    sigma = cov.length_scale
+    vec = HxHy_F(x.coordinate,y.coordinate,sigma)
+    wx = @SVector [x.weight_∂11,x.weight_∂12,x.weight_∂22]
+    wy = @SVector [y.weight_∂11,y.weight_∂12,y.weight_∂22]
+    # @show typeof(vec)
+    # @show vec, wx, wy
+    ans = 0
+    @inbounds for j in 1:3
+        @inbounds for i in 1:3
+            ans += vec[3*(j-1)+i]*wx[i]*wy[j]
+        end
+    end
+    return ans
+end
+
+function (cov::MaternCovariance5_2)(x::PointMeasurement, y::∂∂PointMeasurement)
+    function F(x,y,a)
+        eps = 1e-8
+        t = sqrt((x[1]-y[1])^2+(x[2]-y[2])^2+eps)
+        return (1 + sqrt(5)*t/a + 5*t^2/(3*a^2))*exp(-sqrt(5)*t/a)
+    end
+    
+    function Hy_F(x,y,a)
+        hessian = ForwardDiff.hessian(y -> F(x,y,a),y)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    
+    sigma = cov.length_scale
+    vec = Hy_F(x.coordinate,y.coordinate,sigma)
+    wy = @SVector [y.weight_∂11,y.weight_∂12,y.weight_∂22]
+    return sum(vec.*wy)
+end
+
+function (cov::MaternCovariance5_2)(x::∂∂PointMeasurement, y::PointMeasurement)
+    function F(x,y,a)
+        eps = 1e-8
+        t = sqrt((x[1]-y[1])^2+(x[2]-y[2])^2+eps)
+        return (1 + sqrt(5)*t/a + 5*t^2/(3*a^2))*exp(-sqrt(5)*t/a)
+    end
+    
+    function Hx_F(x,y,a)
+        hessian = ForwardDiff.hessian(x -> F(x,y,a),x)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    
+    sigma = cov.length_scale
+    vec = Hx_F(x.coordinate,y.coordinate,sigma)
+    wx = @SVector [x.weight_∂11,x.weight_∂12,x.weight_∂22]
+    return sum(vec.*wx)
+end
+
 struct MaternCovariance7_2{Tv}<:AbstractCovarianceFunction{Tv}
     length_scale::Tv
 end
@@ -133,6 +206,78 @@ function (cov::MaternCovariance7_2)(x::Δ∇δPointMeasurement, y::Δ∇δPointM
     dist = norm(vec);
     sigma = cov.length_scale;
     return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*F(dist,sigma) - w1_x*D3F(dist,sigma)*sum(vec.*wg_y) + w1_y*D3F(dist,sigma)*sum(vec.*wg_x) - w2_x*DF(dist,sigma)*sum(vec.*wg_y) + w2_y*DF(dist,sigma)*sum(vec.*wg_x) + (sum(-wg_x.*wg_y)*DF(dist,sigma)+sum(wg_x.*vec)*sum(-wg_y.*vec)*DDF(dist,sigma))
+end
+
+
+# dim = 2
+function (cov::MaternCovariance7_2)(x::∂∂PointMeasurement, y::∂∂PointMeasurement)
+    function F(x,y,a)
+        eps = 1e-8
+        t = sqrt((x[1]-y[1])^2+(x[2]-y[2])^2+eps)
+        return (15*a^3+15*sqrt(7)*a^2*t+42*a*t^2+7*sqrt(7)*t^3)/(15*a^3)*exp(-sqrt(7)*t/a)
+    end
+    
+    function Hx_F(x,y,a)
+        hessian = ForwardDiff.hessian(x -> F(x,y,a),x)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    function HxHy_F(x,y,a)
+        hessian =  ForwardDiff.jacobian(y -> ForwardDiff.jacobian(y -> Hx_F(x,y,a),y),y)
+        return hessian[SVector{9,Int64}(1,2,3,4,5,6,10,11,12)]
+    end
+    
+    sigma = cov.length_scale
+    vec = HxHy_F(x.coordinate,y.coordinate,sigma)
+    wx = @SVector [x.weight_∂11,x.weight_∂12,x.weight_∂22]
+    wy = @SVector [y.weight_∂11,y.weight_∂12,y.weight_∂22]
+    # @show typeof(vec)
+    # @show vec, wx, wy
+    ans = 0
+    @inbounds for j in 1:3
+        @inbounds for i in 1:3
+            ans += vec[3*(j-1)+i]*wx[i]*wy[j]
+        end
+    end
+    return ans
+end
+
+function (cov::MaternCovariance7_2)(x::PointMeasurement, y::∂∂PointMeasurement)
+    function F(x,y,a)
+        eps = 1e-8
+        t = sqrt((x[1]-y[1])^2+(x[2]-y[2])^2+eps)
+        return (15*a^3+15*sqrt(7)*a^2*t+42*a*t^2+7*sqrt(7)*t^3)/(15*a^3)*exp(-sqrt(7)*t/a)
+    end
+    
+    function Hy_F(x,y,a)
+        hessian = ForwardDiff.hessian(y -> F(x,y,a),y)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    
+    sigma = cov.length_scale
+    vec = Hy_F(x.coordinate,y.coordinate,sigma)
+    wy = @SVector [y.weight_∂11,y.weight_∂12,y.weight_∂22]
+    return sum(vec.*wy)
+end
+
+function (cov::MaternCovariance7_2)(x::∂∂PointMeasurement, y::PointMeasurement)
+    function F(x,y,a)
+        eps = 1e-8
+        t = sqrt((x[1]-y[1])^2+(x[2]-y[2])^2+eps)
+        return (15*a^3+15*sqrt(7)*a^2*t+42*a*t^2+7*sqrt(7)*t^3)/(15*a^3)*exp(-sqrt(7)*t/a)
+    end
+    
+    function Hx_F(x,y,a)
+        hessian = ForwardDiff.hessian(x -> F(x,y,a),x)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    
+    sigma = cov.length_scale
+    vec = Hx_F(x.coordinate,y.coordinate,sigma)
+    wx = @SVector [x.weight_∂11,x.weight_∂12,x.weight_∂22]
+    return sum(vec.*wx)
 end
 
 struct MaternCovariance9_2{Tv}<:AbstractCovarianceFunction{Tv}
@@ -275,6 +420,73 @@ function (cov::GaussianCovariance)(x::Δ∇δPointMeasurement, y::Δ∇δPointMe
     return w1_x*w1_y*D4F(dist,sigma) + (w2_x*w1_y+w1_x*w2_y)*D2F(dist,sigma) + w2_x*w2_y*F(dist,sigma) - w1_x*D3F(dist,sigma)*sum(vec.*wg_y) + w1_y*D3F(dist,sigma)*sum(vec.*wg_x) - w2_x*DF(dist,sigma)*sum(vec.*wg_y) + w2_y*DF(dist,sigma)*sum(vec.*wg_x) + (sum(-wg_x.*wg_y)*DF(dist,sigma)+sum(wg_x.*vec)*sum(-wg_y.*vec)*DDF(dist,sigma))
 end
 
+# dim = 2
+function (cov::GaussianCovariance)(x::∂∂PointMeasurement, y::∂∂PointMeasurement)
+    function F(x,y,a)
+        t = (x[1]-y[1])^2+(x[2]-y[2])^2
+        return exp(-t/(2*a^2))
+    end
+    
+    function Hx_F(x,y,a)
+        hessian = ForwardDiff.hessian(x -> F(x,y,a),x)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    function HxHy_F(x,y,a)
+        hessian =  ForwardDiff.jacobian(y -> ForwardDiff.jacobian(y -> Hx_F(x,y,a),y),y)
+        return hessian[SVector{9,Int64}(1,2,3,4,5,6,10,11,12)]
+    end
+    
+    sigma = cov.length_scale
+    vec = HxHy_F(x.coordinate,y.coordinate,sigma)
+    wx = @SVector [x.weight_∂11,x.weight_∂12,x.weight_∂22]
+    wy = @SVector [y.weight_∂11,y.weight_∂12,y.weight_∂22]
+    # @show typeof(vec)
+    # @show vec, wx, wy
+    ans = 0
+    @inbounds for j in 1:3
+        @inbounds for i in 1:3
+            ans += vec[3*(j-1)+i]*wx[i]*wy[j]
+        end
+    end
+    return ans
+end
+
+function (cov::GaussianCovariance)(x::PointMeasurement, y::∂∂PointMeasurement)
+    function F(x,y,a)
+        t = (x[1]-y[1])^2+(x[2]-y[2])^2
+        return exp(-t/(2*a^2))
+    end
+    
+    function Hy_F(x,y,a)
+        hessian = ForwardDiff.hessian(y -> F(x,y,a),y)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    
+    sigma = cov.length_scale
+    vec = Hy_F(x.coordinate,y.coordinate,sigma)
+    wy = @SVector [y.weight_∂11,y.weight_∂12,y.weight_∂22]
+    return sum(vec.*wy)
+end
+
+function (cov::GaussianCovariance)(x::∂∂PointMeasurement, y::PointMeasurement)
+    function F(x,y,a)
+        t = (x[1]-y[1])^2+(x[2]-y[2])^2
+        return exp(-t/(2*a^2))
+    end
+    
+    function Hx_F(x,y,a)
+        hessian = ForwardDiff.hessian(x -> F(x,y,a),x)
+        return @SVector [hessian[1],hessian[2],hessian[4]]
+    end
+    
+    
+    sigma = cov.length_scale
+    vec = Hx_F(x.coordinate,y.coordinate,sigma)
+    wx = @SVector [x.weight_∂11,x.weight_∂12,x.weight_∂22]
+    return sum(vec.*wx)
+end
 
 function (cov::AbstractCovarianceFunction)(x::ΔδPointMeasurement, y::PointMeasurement)
     return cov(x, ΔδPointMeasurement(y))
