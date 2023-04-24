@@ -1,3 +1,4 @@
+import Base.rand
 ############################################################
 # Computing prediction
 ############################################################
@@ -218,3 +219,5 @@ function predict_threaded(skeletons::Vector{Skeleton{Ti}}, ITest::AbstractVector
     @. μ = - σ * μ 
     return μ, σ
 end
+
+

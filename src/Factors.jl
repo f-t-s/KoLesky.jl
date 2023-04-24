@@ -1,7 +1,12 @@
 import LinearAlgebra: Factorization, Cholesky
 import SparseArrays.SparseMatrixCSC
+import Base.size
 abstract type AbstractKLFactorization{Tv}<:Factorization{Tv} end
 # An "Explicit" Cholesky factorization of a kernel matrix.
+
+########################################
+# Structs
+########################################
 
 # An implicit Cholesky factorization of a kernel matrix that allows to perform prediction and compute the likelihood without explicitly storing the matrix
 struct ImplicitKLFactorization{Tv,Ti,Tm,Tc<:AbstractCovarianceFunction{Tv}}<:AbstractKLFactorization{Tv}
@@ -25,6 +30,11 @@ struct ExplicitKLFactorization{Tv,Ti,Tm,Tc}<:AbstractKLFactorization{Tv}
     # (Inverse-)Cholesky factor
     U::SparseMatrixCSC{Tv,Ti}
 end 
+
+
+########################################
+# Constructors
+########################################
 
 function ExplicitKLFactorization(in::ImplicitKLFactorization{Tv,Ti,Tm,Tc}; nugget = 0.0) where {Tv,Ti,Tm,Tc}
     return ExplicitKLFactorization{Tv,Ti,Tm,Tc}(in.P, in.supernodes.measurements, in.𝒢, factorize(in.𝒢, in.supernodes; nugget = nugget))
@@ -139,7 +149,7 @@ function ImplicitKLFactorization_DiracsFirstThenUnifScale(𝒢::AbstractCovarian
     return ImplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, supernodes, 𝒢)
 end
 
-# Construct an implicit KL Factorization 
+# Construct an explicit KL Factorization 
 # using 1-maximin and a single set of measurments
 function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measurements::AbstractVector{<:AbstractPointMeasurement}, ρ; lambda=1.5, alpha=1.0, Tree=KDTree, nugget = 0.0) where Tv
     x = reduce(hcat, collect.(get_coordinate.(measurements)))
@@ -183,6 +193,11 @@ function ExplicitKLFactorization(𝒢::AbstractCovarianceFunction{Tv}, measureme
     return ExplicitKLFactorization{Tv,Ti,eltype(measurements),typeof(𝒢)}(P, measurements, 𝒢, factorize(𝒢, supernodes))
 end
 
+
+########################################
+# Debugging 
+########################################
+
 # Assembling the approximate kernel matrix implied by a factorization
 function assemble_covariance(factor::ExplicitKLFactorization)
     inv_U_matrix = inv(Matrix(factor.U))
@@ -192,10 +207,39 @@ function assemble_covariance(factor::ExplicitKLFactorization)
     return (inv_U_matrix' * inv_U_matrix)[inv_P, inv_P]
 end 
 
-
 # The dense, exact Cholesky factorization. Only for debugging purposes.
 struct DenseCholeskyFactorization{Tv,Tm,Tc}<:AbstractKLFactorization{Tv}
     L::Cholesky{Tv,Matrix{Tv}}
     measurements::Tm
     𝒢
 end
+
+########################################
+# Interface / Utility
+########################################
+function size(factor::ExplicitKLFactorization)
+    return size(factor.U)
+end
+
+function size(factor::ExplicitKLFactorization, d::Integer)
+    return size(factor.U, d)
+end
+
+############################################################
+# Sampling
+############################################################
+# Samples from the GP implied by an ExplicitKLFactorization
+function sample(factor::ExplicitKLFactorization, n)
+    # we use a standard normal as input variance
+    input_randomness = randn(size(factor, 1), n)
+    # we construct a random variable that is distributed according to 𝒩(0, (UᵀU)⁻¹)
+    output_randomness = factor.U' \ input_randomness 
+    # We account for the permutation to recover the randomness in the order
+    # of the input measurements. 
+    inv_P = similar(factor.P)
+    inv_P[factor.P] = 1 : length(inv_P)
+    output_randomness .= output_randomness[inv_P, :]
+    return [output_randomness[:, k] for k in axes(output_randomness, 2)] 
+end
+
+
