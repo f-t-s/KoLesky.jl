@@ -233,7 +233,7 @@ function sample(factor::ExplicitKLFactorization, n)
     # we use a standard normal as input variance
     input_randomness = randn(size(factor, 1), n)
     # we construct a random variable that is distributed according to 𝒩(0, (UᵀU)⁻¹)
-    output_randomness = factor.U' \ input_randomness 
+    output_randomness = SparseMatrixCSC(factor.U') \ input_randomness 
     # We account for the permutation to recover the randomness in the order
     # of the input measurements. 
     inv_P = similar(factor.P)
