@@ -11,6 +11,13 @@ struct PointMeasurement{d}<:AbstractPointMeasurement{d}
     coordinate::SVector{d,Float64}
 end 
 
+# a point measurement that corresponds to a previously formed matrix
+struct PointIndexMeasurement{d}<:AbstractPointMeasurement{d}
+    coordinate::SVector{d,Float64}
+    index::Int
+end
+
+
 struct ΔδPointMeasurement{Tv,d}<:AbstractPointMeasurement{d}
     coordinate::SVector{d,Float64}
     weight_Δ::Tv
@@ -49,4 +56,16 @@ function point_measurements(x::Matrix; dims=1)
     d = size(x, 1)
     return [PointMeasurement{d}(SVector{d,Float64}(x[:, k])) for k = 1 : size(x, 2)]
 end
+
+function point_index_measurements(x::Matrix; dims=1)
+    if dims == 2  
+        x = x'
+    elseif dims !=1
+        error("keyword argumend \"dims\" should be 1 or 2")
+    end
+    d = size(x, 1)
+    return [PointIndexMeasurement{d}(SVector{d,Float64}(x[:, k]), k) for k = 1 : size(x, 2)]
+end
+
+
 
