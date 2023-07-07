@@ -22,6 +22,14 @@ function (cov::AbstractCovarianceFunction{Tv})(out::AbstractMatrix{Tv}, x_vec::A
     end
 end
 
+struct MatrixCovariance{Tv}<:AbstractCovarianceFunction{Tv}
+    cov_mat::Matrix{Tv}
+end
+
+function(cov::MatrixCovariance)(x::PointIndexMeasurement, y::PointIndexMeasurement)
+    return cov.cov_mat[x.index, y.index]
+end
+
 struct MaternCovariance1_2{Tv}<:AbstractCovarianceFunction{Tv}
     length_scale::Tv
 end
